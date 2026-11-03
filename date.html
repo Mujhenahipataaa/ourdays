@@ -1,0 +1,288 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Our Days</title>
+    <style>
+      :root {
+        --bg: #fdf6f0;
+        --card: #fff;
+        --ink: #2b2230;
+        --mute: #7b6f82;
+        --line: #eadfd8;
+        --accent: #e0577a;
+        --accent2: #7a5cd6;
+        --special: #f6b73c;
+        --soft: #fbe7ec;
+        box-sizing: border-box;
+        padding-top: env(safe-area-inset-top, 0px);
+        padding-bottom: env(safe-area-inset-bottom, 0px);
+      }
+      @media (prefers-color-scheme: dark) {
+        :root:not([data-theme="light"]) {
+          --bg: #17131c; --card: #221c29; --ink: #f3ecf6; --mute: #a498ad;
+          --line: #35293e; --accent: #ff7b9c; --accent2: #a68cff; --soft: #3a2430;
+          color-scheme: dark;
+        }
+      }
+      :root[data-theme="dark"] {
+        --bg: #17131c; --card: #221c29; --ink: #f3ecf6; --mute: #a498ad;
+        --line: #35293e; --accent: #ff7b9c; --accent2: #a68cff; --soft: #3a2430;
+        color-scheme: dark;
+      }
+      html { scroll-padding-top: env(safe-area-inset-top, 0px); }
+      * { box-sizing: border-box; }
+      body { margin: 0; background: var(--bg); color: var(--ink); font-family: Georgia, "Iowan Old Style", serif; line-height: 1.45; }
+      .wrap { max-width: 980px; margin: 0 auto; padding: 16px; display: grid; gap: 16px; grid-template-columns: 1fr; }
+      @media (min-width: 820px) { .wrap { grid-template-columns: 1.25fr 1fr; } }
+      h1 { margin: 0; font-size: 26px; }
+      h1 span { color: var(--accent); }
+      header { grid-column: 1/-1; display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; }
+      .who { font: 14px system-ui, sans-serif; color: var(--mute); display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+      .card { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 14px; }
+      .nav { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+      .nav h2 { margin: 0; font-size: 20px; }
+      button { font: 14px system-ui, sans-serif; border: 1px solid var(--line); background: var(--card); color: var(--ink); padding: 6px 12px; border-radius: 10px; cursor: pointer; }
+      button.pri { background: var(--accent); border-color: var(--accent); color: #fff; }
+      .grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+      .dow { font: 12px system-ui, sans-serif; color: var(--mute); text-align: center; padding: 2px; }
+      .day { aspect-ratio: 1; min-height: 44px; border: 1px solid var(--line); border-radius: 10px; background: var(--bg); padding: 4px; font: 13px system-ui, sans-serif; text-align: left; display: flex; flex-direction: column; justify-content: space-between; color: var(--ink); }
+      .day.out { opacity: 0.35; }
+      .day.today { border-color: var(--accent); border-width: 2px; }
+      .day.sel { background: var(--soft); }
+      .dots { display: flex; gap: 3px; flex-wrap: wrap; }
+      .dot { width: 8px; height: 8px; border-radius: 50%; }
+      .dot.s { background: var(--special); }
+      .dot.j { background: var(--accent2); }
+      .entry { border-left: 4px solid var(--accent2); background: var(--bg); border-radius: 8px; padding: 8px 10px; margin: 8px 0; }
+      .entry.s { border-color: var(--special); }
+      .entry b { display: block; }
+      .entry small { font: 12px system-ui, sans-serif; color: var(--mute); }
+      .entry p { margin: 4px 0; white-space: pre-wrap; }
+      form { display: grid; gap: 8px; margin-top: 10px; }
+      input, textarea, select { font: 15px Georgia, serif; border: 1px solid var(--line); background: var(--bg); color: var(--ink); border-radius: 10px; padding: 8px; width: 100%; }
+      textarea { min-height: 90px; }
+      label.chk { font: 14px system-ui, sans-serif; color: var(--mute); display: flex; gap: 6px; align-items: center; }
+      label.chk input { width: auto; }
+      .up div { padding: 6px 0; border-bottom: 1px dashed var(--line); font-size: 15px; }
+      .up small { color: var(--mute); font-family: system-ui, sans-serif; }
+      .empty { color: var(--mute); font-size: 14px; }
+      #note { font: 13px system-ui, sans-serif; color: var(--mute); grid-column: 1/-1; }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <header>
+        <h1>Our <span>Days</span> ♥</h1>
+        <div class="who">
+          <span>You are <b id="me">…</b></span>
+          <button id="rename">change name</button>
+          <button id="room">change room</button>
+        </div>
+      </header>
+      <div class="card">
+        <div class="nav">
+          <button id="prev">‹</button>
+          <h2 id="mt"></h2>
+          <button id="next">›</button>
+        </div>
+        <div class="grid" id="dows"></div>
+        <div class="grid" id="cal" style="margin-top: 4px"></div>
+      </div>
+      <div style="display: grid; gap: 16px; align-content: start">
+        <div class="card">
+          <h3 id="dt" style="margin: 0 0 4px"></h3>
+          <div id="list"></div>
+          <form id="f">
+            <select id="kind">
+              <option value="special">★ Special day</option>
+              <option value="journal">✎ Journal entry</option>
+            </select>
+            <input id="title" placeholder="Title" required maxlength="80" />
+            <textarea id="text" placeholder="Write about it…" maxlength="5000"></textarea>
+            <label class="chk" id="rep"><input type="checkbox" id="yearly" /> Repeats every year</label>
+            <button class="pri" type="submit">Save</button>
+          </form>
+        </div>
+        <div class="card up">
+          <h3 style="margin: 0 0 6px">Coming up</h3>
+          <div id="up"></div>
+        </div>
+      </div>
+      <div id="note"></div>
+    </div>
+
+    <script type="module">
+      import { initializeApp } from "https://www.gstatic.com/firebasejs/13.2.0/firebase-app.js";
+      import { getFirestore, collection, addDoc, deleteDoc, doc, onSnapshot } from "https://www.gstatic.com/firebasejs/13.2.0/firebase-firestore.js";
+
+      /* ====== SETUP: paste your Firebase web app config here ====== */
+      var firebaseConfig = {
+        apiKey: "AIzaSyAGOtC3M_Wo0g35mZNwEJOleKgetCqACE0",
+        authDomain: "olafandyou.firebaseapp.com",
+        projectId: "olafandyou",
+        storageBucket: "olafandyou.firebasestorage.app",
+        messagingSenderId: "361173212771",
+        appId: "1:361173212771:web:98ea819517b19448046256",
+      };
+
+      var pad = function (n) { return String(n).padStart(2, "0"); };
+      var ds = function (d) { return d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate()); };
+      var today = new Date(),
+        view = new Date(today.getFullYear(), today.getMonth(), 1),
+        sel = ds(today);
+      var entries = [], coll = null, db = null, unsub = null, me = "", roomCode = "";
+      var $ = function (i) { return document.getElementById(i); };
+      var MON = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+      function note(t) { $("note").textContent = t || ""; }
+
+      try { me = localStorage.getItem("ourdays-name") || ""; roomCode = localStorage.getItem("ourdays-room") || ""; } catch (e) {}
+
+      function askName(force) {
+        if (me && !force) return;
+        var n = prompt("What should we call you? (shown on your entries)", me || "");
+        if (n && n.trim()) {
+          me = n.trim().slice(0, 30);
+          try { localStorage.setItem("ourdays-name", me); } catch (e) {}
+        }
+        $("me").textContent = me || "a guest";
+        render();
+      }
+      function askRoom(force) {
+        if (roomCode && !force) return Promise.resolve();
+        var c = prompt("Enter your private room code.\nUse the SAME code on both phones (at least 8 characters, keep it secret):", "");
+        if (!c || c.trim().length < 8) { note("A room code of at least 8 characters is needed to load your calendar."); return Promise.resolve(); }
+        roomCode = c.trim().toLowerCase();
+        try { localStorage.setItem("ourdays-room", roomCode); } catch (e) {}
+        return Promise.resolve();
+      }
+      function sha256Hex(s) {
+        return crypto.subtle.digest("SHA-256", new TextEncoder().encode(s)).then(function (buf) {
+          return Array.from(new Uint8Array(buf)).map(function (b) { return b.toString(16).padStart(2, "0"); }).join("");
+        });
+      }
+      function connect() {
+        if (unsub) { unsub(); unsub = null; }
+        entries = []; coll = null; render();
+        if (!roomCode) return;
+        if (/PASTE_/.test(firebaseConfig.apiKey)) { note("Add your Firebase config at the top of the script to turn on saving."); return; }
+        note("Loading…");
+        sha256Hex("ourdays:" + roomCode).then(function (h) {
+          if (!db) db = getFirestore(initializeApp(firebaseConfig));
+          coll = collection(db, "rooms", h, "entries");
+          unsub = onSnapshot(coll,
+            function (snap) {
+              entries = snap.docs.map(function (d) { var x = d.data(); x.id = d.id; return x; })
+                .filter(function (e) { return e && e.date && e.title; });
+              note("");
+              render();
+            },
+            function () { note("Could not reach the shared calendar. Check your Firestore rules and connection."); }
+          );
+        }).catch(function () { note("Could not start. Open the site over https."); });
+      }
+
+      $("me").textContent = me || "a guest";
+      $("rename").onclick = function () { askName(true); };
+      $("room").onclick = function () { askRoom(true).then(connect); };
+
+      ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"].forEach(function (d) {
+        var e = document.createElement("div"); e.className = "dow"; e.textContent = d; $("dows").appendChild(e);
+      });
+      function on(e, date) {
+        if (e.date === date) return true;
+        return e.kind === "special" && e.yearly && e.date.slice(5) === date.slice(5) && e.date < date;
+      }
+      function render() {
+        $("mt").textContent = MON[view.getMonth()] + " " + view.getFullYear();
+        var cal = $("cal"); cal.textContent = "";
+        var first = new Date(view.getFullYear(), view.getMonth(), 1);
+        var start = new Date(first); start.setDate(1 - first.getDay());
+        for (var i = 0; i < 42; i++) {
+          var d = new Date(start); d.setDate(start.getDate() + i);
+          var s = ds(d), b = document.createElement("button");
+          b.className = "day" + (d.getMonth() !== view.getMonth() ? " out" : "") + (s === ds(today) ? " today" : "") + (s === sel ? " sel" : "");
+          var n = document.createElement("span"); n.textContent = d.getDate(); b.appendChild(n);
+          var dots = document.createElement("span"); dots.className = "dots";
+          var es = entries.filter(function (e) { return on(e, s); });
+          if (es.some(function (e) { return e.kind === "special"; })) { var a = document.createElement("i"); a.className = "dot s"; dots.appendChild(a); }
+          if (es.some(function (e) { return e.kind === "journal"; })) { var c = document.createElement("i"); c.className = "dot j"; dots.appendChild(c); }
+          b.appendChild(dots);
+          b.onclick = (function (s, d) { return function () {
+            sel = s;
+            if (d.getMonth() !== view.getMonth()) view = new Date(d.getFullYear(), d.getMonth(), 1);
+            render();
+          }; })(s, d);
+          cal.appendChild(b);
+        }
+        var p = sel.split("-");
+        $("dt").textContent = MON[+p[1] - 1] + " " + +p[2] + ", " + p[0];
+        var list = $("list"); list.textContent = "";
+        var todays = entries.filter(function (e) { return on(e, sel); })
+          .sort(function (a, b) { return (a.createdAt || 0) - (b.createdAt || 0); });
+        if (!todays.length) {
+          var m = document.createElement("div"); m.className = "empty";
+          m.textContent = coll ? "Nothing saved for this day yet." : "Waiting for your room code…";
+          list.appendChild(m);
+        }
+        todays.forEach(function (e) {
+          var w = document.createElement("div"); w.className = "entry " + (e.kind === "special" ? "s" : "j");
+          var t = document.createElement("b"); t.textContent = (e.kind === "special" ? "★ " : "✎ ") + e.title; w.appendChild(t);
+          if (e.text) { var tx = document.createElement("p"); tx.textContent = e.text; w.appendChild(tx); }
+          var sm = document.createElement("small");
+          sm.textContent = "by " + (e.who || "someone") + (e.yearly && e.kind === "special" ? " · every year (since " + e.date.slice(0, 4) + ")" : "");
+          w.appendChild(sm);
+          if (e.who === me) {
+            var x = document.createElement("button"); x.textContent = "delete";
+            x.style.cssText = "float:right;padding:2px 8px;font-size:12px";
+            x.onclick = function () {
+              if (confirm("Delete this entry?") && coll)
+                deleteDoc(doc(coll, e.id)).catch(function () { alert("Could not delete."); });
+            };
+            w.appendChild(x);
+          }
+          list.appendChild(w);
+        });
+        var up = $("up"); up.textContent = "";
+        var found = [];
+        for (var k = 0; k < 60; k++) {
+          var dd = new Date(today.getFullYear(), today.getMonth(), today.getDate() + k), sd = ds(dd);
+          entries.forEach(function (e) { if (e.kind === "special" && on(e, sd)) found.push({ d: dd, e: e, k: k }); });
+        }
+        if (!found.length) {
+          var em = document.createElement("div"); em.className = "empty"; em.textContent = "No special days in the next 60 days."; up.appendChild(em);
+        }
+        found.slice(0, 8).forEach(function (f) {
+          var r = document.createElement("div"); r.textContent = "★ " + f.e.title + " ";
+          var sm = document.createElement("small");
+          sm.textContent = f.k === 0 ? "today!" : f.k === 1 ? "tomorrow" : MON[f.d.getMonth()].slice(0, 3) + " " + f.d.getDate() + " · in " + f.k + " days";
+          r.appendChild(sm); up.appendChild(r);
+        });
+        $("rep").style.display = $("kind").value === "special" ? "flex" : "none";
+      }
+      $("kind").onchange = render;
+      $("prev").onclick = function () { view = new Date(view.getFullYear(), view.getMonth() - 1, 1); render(); };
+      $("next").onclick = function () { view = new Date(view.getFullYear(), view.getMonth() + 1, 1); render(); };
+      $("f").onsubmit = function (ev) {
+        ev.preventDefault();
+        if (!coll) { alert("Not connected yet. Enter your room code and check the Firebase setup."); return; }
+        askName();
+        addDoc(coll, {
+          date: sel,
+          kind: $("kind").value,
+          title: $("title").value.trim(),
+          text: $("text").value.trim(),
+          yearly: $("kind").value === "special" && $("yearly").checked,
+          who: me || "a guest",
+          createdAt: Date.now(),
+        }).then(function () {
+          $("title").value = ""; $("text").value = ""; $("yearly").checked = false;
+        }).catch(function () { alert("Could not save. Check your Firestore rules."); });
+      };
+
+      render();
+      askRoom(false).then(connect);
+    </script>
+  </body>
+</html>
