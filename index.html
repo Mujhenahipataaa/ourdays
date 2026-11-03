@@ -2,120 +2,1129 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover"
+    />
     <title>Our Days</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="shortcut icon" href="favicon.png" type="image/x-icon" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@500;600;700&display=swap"
+      rel="stylesheet"
+    />
     <style>
       :root {
-        --bg: #fdf6f0;
-        --card: #fff;
-        --ink: #2b2230;
-        --mute: #7b6f82;
-        --line: #eadfd8;
-        --accent: #e0577a;
-        --accent2: #7a5cd6;
-        --special: #f6b73c;
-        --soft: #fbe7ec;
+        --bg: #fbf5ef;
+        --card: #fffdf9;
+        --ink: #342a2c;
+        --mute: #837477;
+        --line: #eaded7;
+        --accent: #b64f68;
+        --accent2: #7964a5;
+        --special: #d89c4a;
+        --soft: #f7e9e8;
+        --shadow: 0 14px 36px rgba(75, 49, 48, 0.07);
+        --serif: "Playfair Display", "Iowan Old Style", Georgia, serif;
+        --sans: "DM Sans", system-ui, -apple-system, sans-serif;
         box-sizing: border-box;
         padding-top: env(safe-area-inset-top, 0px);
         padding-bottom: env(safe-area-inset-bottom, 0px);
+        color-scheme: light;
       }
       @media (prefers-color-scheme: dark) {
         :root:not([data-theme="light"]) {
-          --bg: #17131c; --card: #221c29; --ink: #f3ecf6; --mute: #a498ad;
-          --line: #35293e; --accent: #ff7b9c; --accent2: #a68cff; --soft: #3a2430;
+          --bg: #19151a;
+          --card: #241e25;
+          --ink: #f3e9e8;
+          --mute: #b7a7aa;
+          --line: #40333c;
+          --accent: #e98ba0;
+          --accent2: #b3a0df;
+          --special: #e8bd77;
+          --soft: #39272f;
+          --shadow: 0 14px 36px rgba(0, 0, 0, 0.2);
           color-scheme: dark;
         }
       }
       :root[data-theme="dark"] {
-        --bg: #17131c; --card: #221c29; --ink: #f3ecf6; --mute: #a498ad;
-        --line: #35293e; --accent: #ff7b9c; --accent2: #a68cff; --soft: #3a2430;
+        --bg: #19151a;
+        --card: #241e25;
+        --ink: #f3e9e8;
+        --mute: #b7a7aa;
+        --line: #40333c;
+        --accent: #e98ba0;
+        --accent2: #b3a0df;
+        --special: #e8bd77;
+        --soft: #39272f;
+        --shadow: 0 14px 36px rgba(0, 0, 0, 0.2);
         color-scheme: dark;
       }
-      html { scroll-padding-top: env(safe-area-inset-top, 0px); }
-      * { box-sizing: border-box; }
-      body { margin: 0; background: var(--bg); color: var(--ink); font-family: Georgia, "Iowan Old Style", serif; line-height: 1.45; }
-      .wrap { max-width: 980px; margin: 0 auto; padding: 16px; display: grid; gap: 16px; grid-template-columns: 1fr; }
-      @media (min-width: 820px) { .wrap { grid-template-columns: 1.25fr 1fr; } }
-      h1 { margin: 0; font-size: 26px; }
-      h1 span { color: var(--accent); }
-      header { grid-column: 1/-1; display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; }
-      .who { font: 14px system-ui, sans-serif; color: var(--mute); display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
-      .card { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 14px; }
-      .nav { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
-      .nav h2 { margin: 0; font-size: 20px; }
-      button { font: 14px system-ui, sans-serif; border: 1px solid var(--line); background: var(--card); color: var(--ink); padding: 6px 12px; border-radius: 10px; cursor: pointer; }
-      button.pri { background: var(--accent); border-color: var(--accent); color: #fff; }
-      .grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
-      .dow { font: 12px system-ui, sans-serif; color: var(--mute); text-align: center; padding: 2px; }
-      .day { aspect-ratio: 1; min-height: 44px; border: 1px solid var(--line); border-radius: 10px; background: var(--bg); padding: 4px; font: 13px system-ui, sans-serif; text-align: left; display: flex; flex-direction: column; justify-content: space-between; color: var(--ink); }
-      .day.out { opacity: 0.35; }
-      .day.today { border-color: var(--accent); border-width: 2px; }
-      .day.sel { background: var(--soft); }
-      .dots { display: flex; gap: 3px; flex-wrap: wrap; }
-      .dot { width: 8px; height: 8px; border-radius: 50%; }
-      .dot.s { background: var(--special); }
-      .dot.j { background: var(--accent2); }
-      .entry { border-left: 4px solid var(--accent2); background: var(--bg); border-radius: 8px; padding: 8px 10px; margin: 8px 0; }
-      .entry.s { border-color: var(--special); }
-      .entry b { display: block; }
-      .entry small { font: 12px system-ui, sans-serif; color: var(--mute); }
-      .entry p { margin: 4px 0; white-space: pre-wrap; }
-      form { display: grid; gap: 8px; margin-top: 10px; }
-      input, textarea, select { font: 15px Georgia, serif; border: 1px solid var(--line); background: var(--bg); color: var(--ink); border-radius: 10px; padding: 8px; width: 100%; }
-      textarea { min-height: 90px; }
-      label.chk { font: 14px system-ui, sans-serif; color: var(--mute); display: flex; gap: 6px; align-items: center; }
-      label.chk input { width: auto; }
-      .up div { padding: 6px 0; border-bottom: 1px dashed var(--line); font-size: 15px; }
-      .up small { color: var(--mute); font-family: system-ui, sans-serif; }
-      .empty { color: var(--mute); font-size: 14px; }
-      #note { font: 13px system-ui, sans-serif; color: var(--mute); grid-column: 1/-1; }
+      html {
+        scroll-padding-top: env(safe-area-inset-top, 0px);
+      }
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        min-height: 100vh;
+        background: var(--bg);
+        color: var(--ink);
+        font: 16px/1.65 var(--sans);
+        letter-spacing: 0.005em;
+        background-image: radial-gradient(
+          ellipse at 8% 0%,
+          rgba(217, 155, 131, 0.11),
+          transparent 34%
+        );
+        position: relative;
+        overflow-x: hidden;
+      }
+      .wrap {
+        width: min(100%, 1120px);
+        margin: 0 auto;
+        padding: clamp(20px, 4vw, 42px) clamp(16px, 4vw, 36px);
+        display: grid;
+        gap: 20px;
+        grid-template-columns: minmax(0, 1.15fr) minmax(300px, 0.85fr);
+      }
+      header {
+        grid-column: 1/-1;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 20px;
+        flex-wrap: wrap;
+        padding: 4px 2px 10px;
+      }
+      h1,
+      h2,
+      h3 {
+        font-family: var(--serif);
+        font-weight: 600;
+        letter-spacing: -0.035em;
+        line-height: 1.15;
+      }
+      h1 {
+        margin: 0;
+        font-size: clamp(2.1rem, 5vw, 3.15rem);
+      }
+      h1 span {
+        color: var(--accent);
+        font-style: italic;
+      }
+      .who {
+        font: 500 13px/1.5 var(--sans);
+        color: var(--mute);
+        display: flex;
+        gap: 8px;
+        align-items: center;
+        flex-wrap: wrap;
+      }
+      .who b {
+        color: var(--ink);
+        font-weight: 600;
+      }
+      .settings {
+        position: relative;
+      }
+      .settings-toggle {
+        width: 42px;
+        min-height: 42px;
+        padding: 7px;
+        border-radius: 50%;
+        font-size: 19px;
+      }
+      .settings-menu {
+        position: absolute;
+        z-index: 30;
+        top: calc(100% + 8px);
+        right: 0;
+        width: min(240px, calc(100vw - 32px));
+        padding: 12px;
+        display: grid;
+        gap: 8px;
+        background: var(--card);
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        box-shadow: var(--shadow);
+      }
+      .settings-menu[hidden] {
+        display: none;
+      }
+      .settings-menu button {
+        width: 100%;
+        text-align: left;
+      }
+      .card {
+        min-width: 0;
+        background: var(--card);
+        border: 1px solid var(--line);
+        border-radius: 20px;
+        padding: clamp(16px, 2.4vw, 24px);
+        box-shadow: var(--shadow);
+      }
+      .nav {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 12px;
+        margin: 0 0 20px;
+      }
+      .nav h2 {
+        margin: 0;
+        font-size: clamp(1.45rem, 3vw, 1.9rem);
+        text-align: center;
+      }
+      button {
+        font: 600 13px/1.2 var(--sans);
+        letter-spacing: 0.015em;
+        border: 1px solid var(--line);
+        background: var(--card);
+        color: var(--ink);
+        min-height: 40px;
+        padding: 9px 14px;
+        border-radius: 12px;
+        cursor: pointer;
+        transition:
+          background 0.18s ease,
+          border-color 0.18s ease,
+          transform 0.18s ease;
+      }
+      button:hover {
+        border-color: var(--accent);
+        background: var(--soft);
+      }
+      button:active {
+        transform: translateY(1px);
+      }
+      button:focus-visible,
+      input:focus-visible,
+      textarea:focus-visible,
+      select:focus-visible {
+        outline: 3px solid color-mix(in srgb, var(--accent) 42%, transparent);
+        outline-offset: 2px;
+      }
+      button.pri {
+        background: var(--accent);
+        border-color: var(--accent);
+        color: #fff;
+        min-height: 46px;
+      }
+      button.pri:hover {
+        background: color-mix(in srgb, var(--accent) 88%, #000);
+      }
+      #prev,
+      #next {
+        width: 42px;
+        padding: 7px;
+        font-size: 20px;
+        font-weight: 400;
+      }
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(7, minmax(0, 1fr));
+        gap: 6px;
+      }
+      .dow {
+        font: 700 10px/1.2 var(--sans);
+        color: var(--mute);
+        text-align: center;
+        padding: 3px 0 7px;
+        text-transform: uppercase;
+        letter-spacing: 0.12em;
+      }
+      .day {
+        aspect-ratio: 1;
+        min-height: 48px;
+        border: 1px solid transparent;
+        border-radius: 13px;
+        background: transparent;
+        padding: 7px;
+        font: 500 14px/1 var(--sans);
+        text-align: left;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        color: var(--ink);
+      }
+      .day:hover {
+        border-color: var(--line);
+        background: var(--bg);
+      }
+      .day.out {
+        opacity: 0.38;
+      }
+      .day.today {
+        border-color: var(--accent);
+        color: var(--accent);
+        font-weight: 700;
+      }
+      .day.sel {
+        background: var(--soft);
+        border-color: color-mix(in srgb, var(--accent) 45%, var(--line));
+        color: var(--ink);
+      }
+      .dots {
+        display: flex;
+        gap: 4px;
+        flex-wrap: wrap;
+        min-height: 8px;
+      }
+      .dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 2px;
+      }
+      .dot.s {
+        background: var(--special);
+      }
+      .dot.j {
+        background: var(--accent2);
+      }
+      .side {
+        display: grid;
+        gap: 20px;
+        align-content: start;
+      }
+      h3 {
+        margin: 0 0 12px;
+        font-size: 1.42rem;
+      }
+      #dt {
+        color: var(--accent);
+        font-size: clamp(1.5rem, 3vw, 1.9rem);
+        margin: 0 0 14px !important;
+      }
+      .entry {
+        position: relative;
+        border-left: 8px solid var(--accent2);
+        background: var(--bg);
+        border-radius: 0 13px 13px 0;
+        padding: 13px 15px;
+        margin: 10px 0;
+        transition:
+          transform 0.2s ease,
+          box-shadow 0.2s ease;
+      }
+      .entry.s {
+        border-color: var(--special);
+      }
+      .entry-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 8px;
+      }
+      .entry b {
+        display: block;
+        font: 600 1.1rem/1.35 var(--serif);
+        letter-spacing: -0.01em;
+        margin-bottom: 4px;
+        word-break: break-word;
+      }
+      .entry p {
+        margin: 7px 0;
+        white-space: pre-wrap;
+        font: 400 15px/1.75 var(--serif);
+        word-break: break-word;
+      }
+      .entry small,
+      .up small {
+        font: 500 11px/1.5 var(--sans);
+        color: var(--mute);
+        letter-spacing: 0.025em;
+      }
+
+      /* Three dots menu styles */
+      .menu-btn {
+        background: transparent;
+        border: none;
+        color: var(--mute);
+        font-size: 18px;
+        line-height: 1;
+        padding: 2px 6px;
+        min-height: auto;
+        border-radius: 6px;
+        cursor: pointer;
+        opacity: 0.7;
+        transition:
+          opacity 0.15s ease,
+          background 0.15s ease;
+      }
+      .menu-btn:hover {
+        opacity: 1;
+        background: var(--soft);
+        border-color: transparent;
+      }
+      .dropdown-menu {
+        position: absolute;
+        top: 36px;
+        right: 12px;
+        background: var(--card);
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        box-shadow: var(--shadow);
+        z-index: 20;
+        display: none;
+        flex-direction: column;
+        min-width: 140px;
+        overflow: hidden;
+        animation: fadeIn 0.15s ease;
+      }
+      .dropdown-menu.show {
+        display: flex;
+      }
+      .dropdown-item {
+        background: transparent;
+        border: none;
+        border-radius: 0;
+        text-align: left;
+        padding: 10px 14px;
+        font-size: 13px;
+        font-weight: 500;
+        color: var(--ink);
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        width: 100%;
+        min-height: auto;
+      }
+      .dropdown-item:hover {
+        background: var(--soft);
+        color: var(--accent);
+      }
+      .dropdown-item.del:hover {
+        color: #d9534f;
+      }
+      .love-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        margin-top: 6px;
+        padding: 2px 8px;
+        background: color-mix(in srgb, var(--accent) 15%, transparent);
+        border-radius: 10px;
+        font-size: 12px;
+        color: var(--accent);
+        font-weight: 600;
+      }
+
+      /* Edit form inside entry */
+      .edit-box {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        margin-top: 8px;
+      }
+      .edit-box input,
+      .edit-box textarea,
+      .edit-box select {
+        padding: 8px 10px;
+        font-size: 14px;
+      }
+      .flag-color-control {
+        display: grid;
+        gap: 5px;
+      }
+      .flag-color-control label {
+        color: var(--mute);
+        font: 600 12px/1.4 var(--sans);
+      }
+      input[type="color"] {
+        width: 68px;
+        height: 42px;
+        padding: 4px;
+        cursor: pointer;
+      }
+
+      form {
+        display: grid;
+        gap: 10px;
+        margin-top: 16px;
+        padding-top: 16px;
+        border-top: 1px solid var(--line);
+      }
+      input,
+      textarea,
+      select {
+        font: 400 15px/1.5 var(--sans);
+        border: 1px solid var(--line);
+        background: var(--bg);
+        color: var(--ink);
+        border-radius: 12px;
+        padding: 11px 13px;
+        width: 100%;
+      }
+      input::placeholder,
+      textarea::placeholder {
+        color: var(--mute);
+        opacity: 0.8;
+      }
+      textarea {
+        min-height: 110px;
+        resize: vertical;
+        font-family: var(--serif);
+        line-height: 1.65;
+      }
+      label.chk {
+        font: 500 13px/1.4 var(--sans);
+        color: var(--mute);
+        display: flex;
+        gap: 9px;
+        align-items: center;
+      }
+      label.chk input {
+        width: 17px;
+        height: 17px;
+        accent-color: var(--accent);
+      }
+      .up div {
+        padding: 9px 0;
+        border-bottom: 1px solid var(--line);
+        font: 600 15px/1.45 var(--serif);
+      }
+      .up div:last-child {
+        border-bottom: 0;
+        padding-bottom: 0;
+      }
+      .up small {
+        display: block;
+        margin-top: 2px;
+      }
+      .empty {
+        color: var(--mute);
+        font: italic 14px/1.6 var(--serif);
+        padding: 5px 0;
+      }
+      #note {
+        font: 500 12px/1.5 var(--sans);
+        color: var(--mute);
+        grid-column: 1/-1;
+        min-height: 1em;
+      }
+
+      /* Floating heart effect keyframes */
+      @keyframes floatUpHeart {
+        0% {
+          opacity: 1;
+          transform: translate(0, 0) scale(0.6) rotate(0deg);
+        }
+        50% {
+          opacity: 0.9;
+          transform: translate(var(--tx), -60px) scale(1.3) rotate(15deg);
+        }
+        100% {
+          opacity: 0;
+          transform: translate(var(--tx2), -130px) scale(1.8) rotate(-20deg);
+        }
+      }
+      .floating-heart {
+        position: fixed;
+        pointer-events: none;
+        z-index: 9999;
+        font-size: 24px;
+        animation: floatUpHeart 1.4s ease-out forwards;
+      }
+
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+          transform: translateY(-4px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      @media (max-width: 760px) {
+        .wrap {
+          grid-template-columns: 1fr;
+          gap: 16px;
+        }
+        header {
+          align-items: flex-start;
+        }
+        .side {
+          gap: 16px;
+        }
+      }
+      @media (max-width: 420px) {
+        .wrap {
+          padding: 18px 12px;
+        }
+        .who {
+          gap: 6px;
+        }
+        .who span {
+          flex-basis: 100%;
+        }
+        .card {
+          border-radius: 17px;
+        }
+        .grid {
+          gap: 3px;
+        }
+        .day {
+          min-height: 42px;
+          padding: 6px 4px;
+          border-radius: 10px;
+        }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        *,
+        *::before,
+        *::after {
+          scroll-behavior: auto !important;
+          transition: none !important;
+        }
+      }
+      .welcome {
+        position: fixed;
+        inset: 0;
+        z-index: 20000;
+        display: grid;
+        place-items: center;
+        overflow: hidden;
+        padding: max(28px, env(safe-area-inset-top)) 22px
+          max(28px, env(safe-area-inset-bottom));
+        color: var(--ink);
+        background:
+          radial-gradient(
+            ellipse at 50% 42%,
+            color-mix(in srgb, var(--accent) 10%, transparent),
+            transparent 43%
+          ),
+          var(--bg);
+        opacity: 1;
+        transition:
+          opacity 0.75s ease,
+          transform 0.75s cubic-bezier(0.2, 0.75, 0.25, 1);
+      }
+      .welcome::before,
+      .welcome::after {
+        content: "";
+        position: absolute;
+        left: 50%;
+        top: 43%;
+        width: min(78vw, 720px);
+        aspect-ratio: 1;
+        border: 1px solid color-mix(in srgb, var(--accent) 14%, transparent);
+        border-radius: 50%;
+        transform: translate(-50%, -50%);
+        pointer-events: none;
+      }
+      .welcome::after {
+        width: min(64vw, 590px);
+        border-color: color-mix(in srgb, var(--special) 18%, transparent);
+      }
+      .welcome-content {
+        position: relative;
+        z-index: 1;
+        width: min(100%, 760px);
+        text-align: center;
+        animation: welcome-arrive 1.15s cubic-bezier(0.2, 0.75, 0.25, 1) both;
+      }
+      .welcome-scene {
+        position: relative;
+        width: 154px;
+        height: 132px;
+        margin: 0 auto 12px;
+        animation: scene-appear 1.4s 0.12s cubic-bezier(0.2, 0.75, 0.25, 1) both;
+      }
+      .welcome-orbit {
+        position: absolute;
+        left: 50%;
+        top: 50%;
+        width: 145px;
+        height: 70px;
+        border: 1px solid color-mix(in srgb, var(--accent) 24%, transparent);
+        border-radius: 50%;
+        transform: translate(-50%, -50%) rotate(-25deg);
+        animation: orbit-turn 12s linear infinite;
+      }
+      .welcome-orbit.orbit-two {
+        width: 128px;
+        height: 95px;
+        border-color: color-mix(in srgb, var(--special) 27%, transparent);
+        transform: translate(-50%, -50%) rotate(48deg);
+        animation: orbit-turn-reverse 16s linear infinite;
+      }
+      .welcome-orbit::after {
+        content: "";
+        position: absolute;
+        left: 12%;
+        top: 15%;
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        background: var(--accent);
+        box-shadow: 0 0 15px color-mix(in srgb, var(--accent) 70%, transparent);
+      }
+      .welcome-keepsake {
+        position: absolute;
+        left: 50%;
+        top: 50%;
+        display: grid;
+        place-items: center;
+        width: 76px;
+        height: 76px;
+        border: 1px solid color-mix(in srgb, var(--accent) 24%, var(--line));
+        border-radius: 24px;
+        background: color-mix(in srgb, var(--card) 88%, transparent);
+        color: var(--accent);
+        font: 34px/1 var(--serif);
+        box-shadow:
+          0 15px 38px rgba(76, 43, 53, 0.12),
+          inset 0 1px 0 rgba(255, 255, 255, 0.6);
+        transform: translate(-50%, -50%) rotate(-8deg);
+        animation: keepsake-float 4.8s 1.2s ease-in-out infinite;
+      }
+      .welcome-sparkle {
+        position: absolute;
+        color: var(--special);
+        font: 18px/1 var(--serif);
+        animation: sparkle 2.8s ease-in-out infinite;
+      }
+      .welcome-sparkle.one {
+        left: 5px;
+        top: 27px;
+        animation-delay: 0.3s;
+      }
+      .welcome-sparkle.two {
+        right: 4px;
+        top: 20px;
+        font-size: 13px;
+        animation-delay: 1.1s;
+      }
+      .welcome-sparkle.three {
+        right: 20px;
+        bottom: 5px;
+        font-size: 15px;
+        animation-delay: 1.7s;
+      }
+      .welcome-kicker {
+        margin: 0 0 22px;
+        color: var(--accent);
+        font: 700 10px/1.4 var(--sans);
+        letter-spacing: 0.24em;
+        text-transform: uppercase;
+      }
+      .welcome-mark {
+        display: grid;
+        place-items: center;
+        width: 54px;
+        height: 54px;
+        margin: 0 auto 25px;
+        border: 1px solid color-mix(in srgb, var(--accent) 28%, var(--line));
+        border-radius: 50%;
+        color: var(--accent);
+        font: 26px/1 var(--serif);
+        box-shadow: 0 0 0 8px color-mix(in srgb, var(--accent) 5%, transparent);
+      }
+      .welcome h2 {
+        max-width: 720px;
+        margin: 0 auto;
+        font: 500 clamp(2.7rem, 8vw, 6.4rem)/0.99 var(--serif);
+        letter-spacing: -0.065em;
+        text-wrap: balance;
+      }
+      .welcome-title-line {
+        display: block;
+      }
+      .welcome-title-name {
+        color: var(--accent);
+        font-style: italic;
+      }
+      .welcome-title-name span {
+        display: inline-block;
+        opacity: 0;
+        filter: blur(8px);
+        animation: letter-arrive 0.9s cubic-bezier(0.2, 0.75, 0.25, 1) forwards;
+      }
+      .welcome-title-name span:nth-child(1) {
+        animation-delay: 0.72s;
+      }
+      .welcome-title-name span:nth-child(2) {
+        animation-delay: 0.88s;
+      }
+      .welcome-title-name span:nth-child(3) {
+        animation-delay: 1.04s;
+      }
+      .welcome-title-name span:nth-child(4) {
+        animation-delay: 1.2s;
+      }
+      .welcome-title-name span:nth-child(5) {
+        animation-delay: 1.36s;
+      }
+      .welcome-title-period {
+        color: var(--ink);
+      }
+      .welcome-title-name span.welcome-title-period {
+        animation-delay: 1.52s;
+      }
+      .welcome h2 em {
+        color: var(--accent);
+        font-weight: 500;
+      }
+      .welcome-message {
+        max-width: 480px;
+        margin: 25px auto 0;
+        color: var(--mute);
+        font: 400 clamp(14px, 2vw, 16px)/1.8 var(--sans);
+        text-wrap: balance;
+        animation: gentle-reveal 1.2s 1.55s both;
+      }
+      .welcome-signoff {
+        margin: 18px 0 30px;
+        color: var(--ink);
+        font: italic 500 17px/1.5 var(--serif);
+        animation: gentle-reveal 1.1s 1.9s both;
+      }
+      .welcome-open {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 22px;
+        min-width: 190px;
+        min-height: 54px;
+        padding: 0 20px;
+        border: 0;
+        border-radius: 999px;
+        background: var(--ink);
+        color: var(--bg);
+        font: 600 13px/1 var(--sans);
+        letter-spacing: 0.02em;
+        animation: gentle-reveal 1.1s 2.15s both;
+      }
+      .welcome-open:hover {
+        background: var(--accent);
+        color: #fff;
+      }
+      .welcome-open span {
+        font-size: 18px;
+        transition: transform 0.2s ease;
+      }
+      .welcome-open:hover span {
+        transform: translateX(3px);
+      }
+      .welcome-footnote {
+        margin: 17px 0 0;
+        color: var(--mute);
+        font: 500 10px/1.5 var(--sans);
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+      }
+      .welcome.leaving {
+        opacity: 0;
+        transform: scale(1.025);
+        pointer-events: none;
+      }
+      @keyframes welcome-arrive {
+        from {
+          opacity: 0;
+          transform: translateY(18px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+      @keyframes scene-appear {
+        from {
+          opacity: 0;
+          transform: translateY(12px) scale(0.82);
+          filter: blur(8px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0) scale(1);
+          filter: blur(0);
+        }
+      }
+      @keyframes keepsake-float {
+        0%,
+        100% {
+          transform: translate(-50%, -50%) rotate(-8deg);
+        }
+        50% {
+          transform: translate(-50%, -57%) rotate(3deg);
+        }
+      }
+      @keyframes orbit-turn {
+        to {
+          transform: translate(-50%, -50%) rotate(335deg);
+        }
+      }
+      @keyframes orbit-turn-reverse {
+        to {
+          transform: translate(-50%, -50%) rotate(-312deg);
+        }
+      }
+      @keyframes sparkle {
+        0%,
+        100% {
+          opacity: 0.3;
+          transform: scale(0.7) rotate(0deg);
+        }
+        50% {
+          opacity: 1;
+          transform: scale(1.2) rotate(18deg);
+        }
+      }
+      @keyframes letter-arrive {
+        from {
+          opacity: 0;
+          transform: translateY(20px) rotate(5deg);
+          filter: blur(8px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0) rotate(0);
+          filter: blur(0);
+        }
+      }
+      @keyframes gentle-reveal {
+        from {
+          opacity: 0;
+          transform: translateY(12px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+      .welcome-seen .welcome {
+        display: none;
+      }
+      @media (max-width: 520px) {
+        .welcome::before {
+          width: 115vw;
+        }
+        .welcome::after {
+          width: 94vw;
+        }
+        .welcome h2 {
+          font-size: clamp(2.8rem, 13vw, 4.5rem);
+        }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .welcome,
+        .welcome-content,
+        .welcome-open span,
+        .welcome-scene,
+        .welcome-orbit,
+        .welcome-keepsake,
+        .welcome-sparkle,
+        .welcome-title-name span,
+        .welcome-message,
+        .welcome-signoff,
+        .welcome-open {
+          animation: none;
+          transition: none;
+        }
+        .welcome-title-name span {
+          opacity: 1;
+          filter: none;
+          transform: none;
+        }
+      }
     </style>
   </head>
   <body>
-    <div class="wrap">
+    <section
+      id="welcomeScreen"
+      class="welcome"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="welcomeTitle"
+      aria-describedby="welcomeMessage"
+    >
+      <div class="welcome-content">
+        <div class="welcome-scene" aria-hidden="true">
+          <span class="welcome-orbit"></span>
+          <span class="welcome-orbit orbit-two"></span>
+          <span class="welcome-keepsake">♥</span>
+          <span class="welcome-sparkle one">✦</span>
+          <span class="welcome-sparkle two">✧</span>
+          <span class="welcome-sparkle three">✧</span>
+        </div>
+        <p class="welcome-kicker">
+          Ekk pyarii si jagha, ek pyare se dil ke liyee! <br />dusre pyare se
+          dil ki terf se!
+        </p>
+        <h2 id="welcomeTitle" aria-label="Hello, Virti.">
+          <span class="welcome-title-line">Hello,</span>
+          <span class="welcome-title-name" aria-hidden="true"
+            ><span>V</span><span>i</span><span>r</span><span>t</span
+            ><span>i</span><span class="welcome-title-period">.</span></span
+          >
+        </h2>
+        <p id="welcomeMessage" class="welcome-message">
+          Let the moon and the stars; be the keepers of our secret.
+        </p>
+        <p class="welcome-signoff">
+          You are the art, and I always love to be your admirer!
+        </p>
+        <button id="welcomeOpen" class="welcome-open" type="button" autofocus>
+          Begin our days <span aria-hidden="true">→</span>
+        </button>
+        <p class="welcome-footnote"></p>
+      </div>
+    </section>
+    <div class="wrap" id="appShell" inert>
       <header>
         <h1>Our <span>Days</span> ♥</h1>
         <div class="who">
           <span>You are <b id="me">…</b></span>
-          <button id="rename">change name</button>
-          <button id="room">change room</button>
+          <div class="settings">
+            <button
+              id="settingsToggle"
+              class="settings-toggle"
+              type="button"
+              aria-label="Settings"
+              aria-expanded="false"
+              aria-controls="settingsMenu"
+              title="Settings"
+            >
+              ⚙
+            </button>
+            <div id="settingsMenu" class="settings-menu" hidden>
+              <button id="rename" type="button">Change name</button>
+              <button id="room" type="button">Change room</button>
+            </div>
+          </div>
         </div>
       </header>
       <div class="card">
         <div class="nav">
-          <button id="prev">‹</button>
+          <button id="prev" type="button" aria-label="Previous month">‹</button>
           <h2 id="mt"></h2>
-          <button id="next">›</button>
+          <button id="next" type="button" aria-label="Next month">›</button>
         </div>
-        <div class="grid" id="dows"></div>
-        <div class="grid" id="cal" style="margin-top: 4px"></div>
+        <div class="grid" id="dows" aria-hidden="true"></div>
+        <div
+          class="grid"
+          id="cal"
+          style="margin-top: 4px"
+          aria-label="Calendar dates"
+        ></div>
       </div>
-      <div style="display: grid; gap: 16px; align-content: start">
+      <div class="side">
         <div class="card">
           <h3 id="dt" style="margin: 0 0 4px"></h3>
           <div id="list"></div>
           <form id="f">
             <select id="kind">
-              <option value="special">★ Special day</option>
-              <option value="journal">✎ Journal entry</option>
+              <option value="special">✦ Pyaraa din</option>
+              <option value="journal">✎ A Message</option>
+              <option value="memory">☾ A Little Memory</option>
+              <option value="gratitude">♥ A Little Thank You</option>
+              <option value="silly">☺ Something Silly</option>
+              <option value="littlewin">✨ A Little Win</option>
             </select>
-            <input id="title" placeholder="Title" required maxlength="80" />
-            <textarea id="text" placeholder="Write about it…" maxlength="5000"></textarea>
-            <label class="chk" id="rep"><input type="checkbox" id="yearly" /> Repeats every year</label>
+            <div class="flag-color-control">
+              <label for="newColor">Flag color</label>
+              <input
+                id="newColor"
+                type="color"
+                value="#3d000f"
+                aria-label="Choose any flag color"
+              />
+            </div>
+            <input
+              id="title"
+              placeholder="A little title"
+              aria-label="Entry title"
+              required
+              maxlength="80"
+            />
+            <textarea
+              id="text"
+              placeholder="Write about this day…"
+              aria-label="Journal text"
+              maxlength="5000"
+            ></textarea>
+            <label class="chk" id="rep"
+              ><input type="checkbox" id="yearly" /> Repeats every year</label
+            >
             <button class="pri" type="submit">Save</button>
           </form>
         </div>
         <div class="card up">
-          <h3 style="margin: 0 0 6px">Coming up</h3>
+          <h3 style="margin: 0 0 6px">A Glimpse of Tomorrow</h3>
           <div id="up"></div>
         </div>
       </div>
       <div id="note"></div>
     </div>
 
+    <!-- Custom Modal/Dialog container for alerts and prompts -->
+    <div
+      id="custom-dialog-backdrop"
+      style="
+        display: none;
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.4);
+        z-index: 10000;
+        align-items: center;
+        justify-content: center;
+        padding: 16px;
+      "
+    >
+      <div
+        style="
+          background: var(--card);
+          border: 1px solid var(--line);
+          border-radius: 18px;
+          padding: 20px;
+          max-width: 360px;
+          width: 100%;
+          box-shadow: var(--shadow);
+        "
+      >
+        <h4
+          id="dialog-title"
+          style="margin: 0 0 8px; font-family: var(--serif); font-size: 1.2rem"
+        >
+          OOPS
+        </h4>
+        <p
+          id="dialog-msg"
+          style="margin: 0 0 14px; font-size: 14px; color: var(--mute)"
+        ></p>
+        <input id="dialog-input" style="display: none; margin-bottom: 14px" />
+        <div style="display: flex; justify-content: flex-end; gap: 8px">
+          <button id="dialog-cancel" style="display: none">Cancel</button>
+          <button
+            id="dialog-ok"
+            class="pri"
+            style="min-height: 36px; padding: 6px 16px"
+          >
+            OK
+          </button>
+        </div>
+      </div>
+    </div>
+
     <script type="module">
       import { initializeApp } from "https://www.gstatic.com/firebasejs/13.2.0/firebase-app.js";
-      import { getFirestore, collection, addDoc, deleteDoc, doc, onSnapshot } from "https://www.gstatic.com/firebasejs/13.2.0/firebase-firestore.js";
+      import {
+        getFirestore,
+        collection,
+        addDoc,
+        updateDoc,
+        increment,
+        deleteDoc,
+        doc,
+        onSnapshot,
+      } from "https://www.gstatic.com/firebasejs/13.2.0/firebase-firestore.js";
 
       /* ====== SETUP: paste your Firebase web app config here ====== */
       var firebaseConfig = {
@@ -127,162 +1136,692 @@
         appId: "1:361173212771:web:98ea819517b19448046256",
       };
 
-      var pad = function (n) { return String(n).padStart(2, "0"); };
-      var ds = function (d) { return d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate()); };
+      var pad = function (n) {
+        return String(n).padStart(2, "0");
+      };
+      var ds = function (d) {
+        return (
+          d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate())
+        );
+      };
       var today = new Date(),
         view = new Date(today.getFullYear(), today.getMonth(), 1),
         sel = ds(today);
-      var entries = [], coll = null, db = null, unsub = null, me = "", roomCode = "";
-      var $ = function (i) { return document.getElementById(i); };
-      var MON = ["January","February","March","April","May","June","July","August","September","October","November","December"];
-      function note(t) { $("note").textContent = t || ""; }
+      var entries = [],
+        editingId = null,
+        coll = null,
+        db = null,
+        unsub = null,
+        me = "",
+        roomCode = "";
+      var $ = function (i) {
+        return document.getElementById(i);
+      };
+      var MON = [
+        "January",
+        "February",
+        "March",
+        "April",
+        "May",
+        "June",
+        "July",
+        "August",
+        "September",
+        "October",
+        "November",
+        "December",
+      ];
 
-      try { me = localStorage.getItem("ourdays-name") || ""; roomCode = localStorage.getItem("ourdays-room") || ""; } catch (e) {}
+      // Custom dialog UI replacement for prompt/confirm/alert
+      function customPrompt(msg, defaultValue, showCancel = true) {
+        return new Promise(function (resolve) {
+          var backdrop = $("custom-dialog-backdrop");
+          var msgEl = $("dialog-msg");
+          var inputEl = $("dialog-input");
+          var okBtn = $("dialog-ok");
+          var cancelBtn = $("dialog-cancel");
+
+          msgEl.textContent = msg;
+          if (defaultValue !== undefined) {
+            inputEl.style.display = "block";
+            inputEl.value = defaultValue;
+          } else {
+            inputEl.style.display = "none";
+          }
+          cancelBtn.style.display = showCancel ? "inline-block" : "none";
+
+          backdrop.style.display = "flex";
+
+          var cleanup = function () {
+            backdrop.style.display = "none";
+            okBtn.onclick = null;
+            cancelBtn.onclick = null;
+          };
+
+          okBtn.onclick = function () {
+            cleanup();
+            resolve(defaultValue !== undefined ? inputEl.value : true);
+          };
+          cancelBtn.onclick = function () {
+            cleanup();
+            resolve(defaultValue !== undefined ? null : false);
+          };
+        });
+      }
+
+      function customAlert(msg) {
+        return customPrompt(msg, undefined, false);
+      }
+
+      function note(t) {
+        $("note").textContent = t || "";
+      }
+
+      try {
+        me = localStorage.getItem("ourdays-name") || "";
+        roomCode = localStorage.getItem("ourdays-room") || "";
+      } catch (e) {}
 
       function askName(force) {
-        if (me && !force) return;
-        var n = prompt("What should we call you? (shown on your entries)", me || "");
-        if (n && n.trim()) {
-          me = n.trim().slice(0, 30);
-          try { localStorage.setItem("ourdays-name", me); } catch (e) {}
-        }
-        $("me").textContent = me || "a guest";
-        render();
+        if (me && !force) return Promise.resolve();
+        return customPrompt(
+          "What should we call you? (shown on your entries)",
+          me || "",
+        ).then(function (n) {
+          if (n && n.trim()) {
+            me = n.trim().slice(0, 30);
+            try {
+              localStorage.setItem("ourdays-name", me);
+            } catch (e) {}
+          }
+          $("me").textContent = me || "a guest";
+          render();
+        });
       }
       function askRoom(force) {
         if (roomCode && !force) return Promise.resolve();
-        var c = prompt("Enter your private room code.\nUse the SAME code on both phones (at least 8 characters, keep it secret):", "");
-        if (!c || c.trim().length < 8) { note("A room code of at least 8 characters is needed to load your calendar."); return Promise.resolve(); }
-        roomCode = c.trim().toLowerCase();
-        try { localStorage.setItem("ourdays-room", roomCode); } catch (e) {}
-        return Promise.resolve();
-      }
-      function sha256Hex(s) {
-        return crypto.subtle.digest("SHA-256", new TextEncoder().encode(s)).then(function (buf) {
-          return Array.from(new Uint8Array(buf)).map(function (b) { return b.toString(16).padStart(2, "0"); }).join("");
+        return customPrompt(
+          "Enter our secret code! (at least 8 characters, secret!):",
+          "",
+        ).then(function (c) {
+          if (!c || c.trim().length < 8) {
+            note("Rememberrr the secret code!!");
+            return Promise.resolve();
+          }
+          roomCode = c.trim().toLowerCase();
+          try {
+            localStorage.setItem("ourdays-room", roomCode);
+          } catch (e) {}
+          return Promise.resolve();
         });
       }
+      function sha256Hex(s) {
+        return crypto.subtle
+          .digest("SHA-256", new TextEncoder().encode(s))
+          .then(function (buf) {
+            return Array.from(new Uint8Array(buf))
+              .map(function (b) {
+                return b.toString(16).padStart(2, "0");
+              })
+              .join("");
+          });
+      }
       function connect() {
-        if (unsub) { unsub(); unsub = null; }
-        entries = []; coll = null; render();
+        if (unsub) {
+          unsub();
+          unsub = null;
+        }
+        entries = [];
+        coll = null;
+        render();
         if (!roomCode) return;
-        if (/PASTE_/.test(firebaseConfig.apiKey)) { note("Add your Firebase config at the top of the script to turn on saving."); return; }
-        note("Loading…");
-        sha256Hex("ourdays:" + roomCode).then(function (h) {
-          if (!db) db = getFirestore(initializeApp(firebaseConfig));
-          coll = collection(db, "rooms", h, "entries");
-          unsub = onSnapshot(coll,
-            function (snap) {
-              entries = snap.docs.map(function (d) { var x = d.data(); x.id = d.id; return x; })
-                .filter(function (e) { return e && e.date && e.title; });
-              note("");
-              render();
-            },
-            function () { note("Could not reach the shared calendar. Check your Firestore rules and connection."); }
+        if (/PASTE_/.test(firebaseConfig.apiKey)) {
+          note(
+            "Add your Firebase config at the top of the script to turn on saving.",
           );
-        }).catch(function () { note("Could not start. Open the site over https."); });
+          return;
+        }
+        note("Loading…");
+        sha256Hex("ourdays:" + roomCode)
+          .then(function (h) {
+            if (!db) db = getFirestore(initializeApp(firebaseConfig));
+            coll = collection(db, "rooms", h, "entries");
+            unsub = onSnapshot(
+              coll,
+              function (snap) {
+                entries = snap.docs
+                  .map(function (d) {
+                    var x = d.data();
+                    x.id = d.id;
+                    return x;
+                  })
+                  .filter(function (e) {
+                    return e && e.date && e.title;
+                  });
+                note("");
+                render();
+              },
+              function () {
+                note(
+                  "Could not reach the shared calendar. Check your Firestore rules and connection.",
+                );
+              },
+            );
+          })
+          .catch(function () {
+            note("Could not start. Open the site over https.");
+          });
       }
 
       $("me").textContent = me || "a guest";
-      $("rename").onclick = function () { askName(true); };
-      $("room").onclick = function () { askRoom(true).then(connect); };
-
-      ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"].forEach(function (d) {
-        var e = document.createElement("div"); e.className = "dow"; e.textContent = d; $("dows").appendChild(e);
-      });
-      function on(e, date) {
-        if (e.date === date) return true;
-        return e.kind === "special" && e.yearly && e.date.slice(5) === date.slice(5) && e.date < date;
+      function closeSettings() {
+        $("settingsMenu").hidden = true;
+        $("settingsToggle").setAttribute("aria-expanded", "false");
       }
-      function render() {
-        $("mt").textContent = MON[view.getMonth()] + " " + view.getFullYear();
-        var cal = $("cal"); cal.textContent = "";
-        var first = new Date(view.getFullYear(), view.getMonth(), 1);
-        var start = new Date(first); start.setDate(1 - first.getDay());
-        for (var i = 0; i < 42; i++) {
-          var d = new Date(start); d.setDate(start.getDate() + i);
-          var s = ds(d), b = document.createElement("button");
-          b.className = "day" + (d.getMonth() !== view.getMonth() ? " out" : "") + (s === ds(today) ? " today" : "") + (s === sel ? " sel" : "");
-          var n = document.createElement("span"); n.textContent = d.getDate(); b.appendChild(n);
-          var dots = document.createElement("span"); dots.className = "dots";
-          var es = entries.filter(function (e) { return on(e, s); });
-          if (es.some(function (e) { return e.kind === "special"; })) { var a = document.createElement("i"); a.className = "dot s"; dots.appendChild(a); }
-          if (es.some(function (e) { return e.kind === "journal"; })) { var c = document.createElement("i"); c.className = "dot j"; dots.appendChild(c); }
-          b.appendChild(dots);
-          b.onclick = (function (s, d) { return function () {
-            sel = s;
-            if (d.getMonth() !== view.getMonth()) view = new Date(d.getFullYear(), d.getMonth(), 1);
-            render();
-          }; })(s, d);
-          cal.appendChild(b);
-        }
-        var p = sel.split("-");
-        $("dt").textContent = MON[+p[1] - 1] + " " + +p[2] + ", " + p[0];
-        var list = $("list"); list.textContent = "";
-        var todays = entries.filter(function (e) { return on(e, sel); })
-          .sort(function (a, b) { return (a.createdAt || 0) - (b.createdAt || 0); });
-        if (!todays.length) {
-          var m = document.createElement("div"); m.className = "empty";
-          m.textContent = coll ? "Nothing saved for this day yet." : "Waiting for your room code…";
-          list.appendChild(m);
-        }
-        todays.forEach(function (e) {
-          var w = document.createElement("div"); w.className = "entry " + (e.kind === "special" ? "s" : "j");
-          var t = document.createElement("b"); t.textContent = (e.kind === "special" ? "★ " : "✎ ") + e.title; w.appendChild(t);
-          if (e.text) { var tx = document.createElement("p"); tx.textContent = e.text; w.appendChild(tx); }
-          var sm = document.createElement("small");
-          sm.textContent = "by " + (e.who || "someone") + (e.yearly && e.kind === "special" ? " · every year (since " + e.date.slice(0, 4) + ")" : "");
-          w.appendChild(sm);
-          if (e.who === me) {
-            var x = document.createElement("button"); x.textContent = "delete";
-            x.style.cssText = "float:right;padding:2px 8px;font-size:12px";
-            x.onclick = function () {
-              if (confirm("Delete this entry?") && coll)
-                deleteDoc(doc(coll, e.id)).catch(function () { alert("Could not delete."); });
-            };
-            w.appendChild(x);
-          }
-          list.appendChild(w);
-        });
-        var up = $("up"); up.textContent = "";
-        var found = [];
-        for (var k = 0; k < 60; k++) {
-          var dd = new Date(today.getFullYear(), today.getMonth(), today.getDate() + k), sd = ds(dd);
-          entries.forEach(function (e) { if (e.kind === "special" && on(e, sd)) found.push({ d: dd, e: e, k: k }); });
-        }
-        if (!found.length) {
-          var em = document.createElement("div"); em.className = "empty"; em.textContent = "No special days in the next 60 days."; up.appendChild(em);
-        }
-        found.slice(0, 8).forEach(function (f) {
-          var r = document.createElement("div"); r.textContent = "★ " + f.e.title + " ";
-          var sm = document.createElement("small");
-          sm.textContent = f.k === 0 ? "today!" : f.k === 1 ? "tomorrow" : MON[f.d.getMonth()].slice(0, 3) + " " + f.d.getDate() + " · in " + f.k + " days";
-          r.appendChild(sm); up.appendChild(r);
-        });
-        $("rep").style.display = $("kind").value === "special" ? "flex" : "none";
-      }
-      $("kind").onchange = render;
-      $("prev").onclick = function () { view = new Date(view.getFullYear(), view.getMonth() - 1, 1); render(); };
-      $("next").onclick = function () { view = new Date(view.getFullYear(), view.getMonth() + 1, 1); render(); };
-      $("f").onsubmit = function (ev) {
-        ev.preventDefault();
-        if (!coll) { alert("Not connected yet. Enter your room code and check the Firebase setup."); return; }
-        askName();
-        addDoc(coll, {
-          date: sel,
-          kind: $("kind").value,
-          title: $("title").value.trim(),
-          text: $("text").value.trim(),
-          yearly: $("kind").value === "special" && $("yearly").checked,
-          who: me || "a guest",
-          createdAt: Date.now(),
-        }).then(function () {
-          $("title").value = ""; $("text").value = ""; $("yearly").checked = false;
-        }).catch(function () { alert("Could not save. Check your Firestore rules."); });
+      $("settingsToggle").onclick = function (evt) {
+        evt.stopPropagation();
+        var willOpen = $("settingsMenu").hidden;
+        $("settingsMenu").hidden = !willOpen;
+        $("settingsToggle").setAttribute("aria-expanded", String(willOpen));
+      };
+      $("rename").onclick = function () {
+        closeSettings();
+        askName(true);
+      };
+      $("room").onclick = function () {
+        closeSettings();
+        askRoom(true).then(connect);
       };
 
-      render();
-      askRoom(false).then(connect);
+      document.addEventListener("keydown", function (evt) {
+        if (evt.key === "Escape") closeSettings();
+      });
+
+      // Close open dropdown menus on click outside
+      document.addEventListener("click", function (evt) {
+        if (!evt.target.closest(".settings")) closeSettings();
+        if (
+          !evt.target.closest(".menu-btn") &&
+          !evt.target.closest(".dropdown-menu")
+        ) {
+          document
+            .querySelectorAll(".dropdown-menu.show")
+            .forEach(function (m) {
+              m.classList.remove("show");
+            });
+        }
+      });
+
+      ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].forEach(function (d) {
+        var e = document.createElement("div");
+        e.className = "dow";
+        e.textContent = d;
+        $("dows").appendChild(e);
+      });
+
+      function on(e, date) {
+        if (e.date === date) return true;
+        return (
+          e.kind === "special" &&
+          e.yearly &&
+          e.date.slice(5) === date.slice(5) &&
+          e.date < date
+        );
+      }
+
+      var LEGACY_FLAG_COLORS = {
+        rose: "#bd536e",
+        lavender: "#7861ac",
+        peach: "#c6784b",
+        sunshine: "#ae812b",
+        mint: "#4b8968",
+        sky: "#4f86a0",
+      };
+      function flagColor(value, kind) {
+        if (LEGACY_FLAG_COLORS[value]) return LEGACY_FLAG_COLORS[value];
+        if (typeof value === "string" && /^#[0-9a-f]{6}$/i.test(value))
+          return value.toLowerCase();
+        return kind === "special"
+          ? LEGACY_FLAG_COLORS.sunshine
+          : LEGACY_FLAG_COLORS.lavender;
+      }
+      function kindMark(kind) {
+        var marks = {
+          special: "✦",
+          journal: "✎",
+          memory: "☾",
+          gratitude: "♥",
+          silly: "☺",
+          littlewin: "✨",
+        };
+        return marks[kind] || "✎";
+      }
+
+      // Goofy heart animation burst
+      function triggerLoveBurst(targetElem) {
+        var rect = targetElem.getBoundingClientRect();
+        var emojis = ["❤️", "💖", "💕", "✨", "🥰", "🌸", "💌", "💝"];
+        for (var i = 0; i < 12; i++) {
+          var heart = document.createElement("div");
+          heart.className = "floating-heart";
+          heart.textContent = emojis[Math.floor(Math.random() * emojis.length)];
+          heart.style.left =
+            rect.left + rect.width / 2 + (Math.random() * 40 - 20) + "px";
+          heart.style.top = rect.top + (Math.random() * 20 - 10) + "px";
+          heart.style.setProperty("--tx", Math.random() * 120 - 60 + "px");
+          heart.style.setProperty("--tx2", Math.random() * 200 - 100 + "px");
+          document.body.appendChild(heart);
+          (function (h) {
+            setTimeout(function () {
+              if (h && h.parentNode) h.parentNode.removeChild(h);
+            }, 1400);
+          })(heart);
+        }
+      }
+
+      function render() {
+        $("mt").textContent = MON[view.getMonth()] + " " + view.getFullYear();
+        var cal = $("cal");
+        cal.textContent = "";
+        var first = new Date(view.getFullYear(), view.getMonth(), 1);
+        var start = new Date(first);
+        start.setDate(1 - first.getDay()); // Fixed syntax error
+
+        for (var i = 0; i < 42; i++) {
+          var d = new Date(start);
+          d.setDate(start.getDate() + i);
+          var s = ds(d),
+            b = document.createElement("button");
+          b.className =
+            "day" +
+            (d.getMonth() !== view.getMonth() ? " out" : "") +
+            (s === ds(today) ? " today" : "") +
+            (s === sel ? " sel" : "");
+          var n = document.createElement("span");
+          n.textContent = d.getDate();
+          b.appendChild(n);
+          var dots = document.createElement("span");
+          dots.className = "dots";
+          var es = entries.filter(function (e) {
+            return on(e, s);
+          });
+          var shownColors = {};
+          es.forEach(function (entry) {
+            var color = flagColor(entry.color, entry.kind);
+            if (shownColors[color]) return;
+            shownColors[color] = true;
+            var marker = document.createElement("i");
+            marker.className = "dot";
+            marker.style.backgroundColor = color;
+            marker.title = "Saved day color " + color;
+            dots.appendChild(marker);
+          });
+          b.appendChild(dots);
+          b.onclick = (function (s, d) {
+            return function () {
+              sel = s;
+              editingId = null;
+              if (d.getMonth() !== view.getMonth())
+                view = new Date(d.getFullYear(), d.getMonth(), 1);
+              render();
+            };
+          })(s, d);
+          cal.appendChild(b);
+        }
+
+        var p = sel.split("-");
+        $("dt").textContent = MON[+p[1] - 1] + " " + +p[2] + ", " + p[0];
+        var list = $("list");
+        list.textContent = "";
+
+        var todays = entries
+          .filter(function (e) {
+            return on(e, sel);
+          })
+          .sort(function (a, b) {
+            return (a.createdAt || 0) - (b.createdAt || 0);
+          });
+
+        if (!todays.length) {
+          var m = document.createElement("div");
+          m.className = "empty";
+          m.textContent = coll
+            ? "Nothing saved for this day yet."
+            : "Waiting for your room code…";
+          list.appendChild(m);
+        }
+
+        todays.forEach(function (e) {
+          var w = document.createElement("div");
+          w.className = "entry " + (e.kind === "special" ? "s" : "j");
+          // Apply the chosen color inline so the special-day style cannot
+          // override it with the default yellow accent.
+          w.style.borderLeftColor = flagColor(e.color, e.kind);
+
+          if (editingId === e.id) {
+            // Inline edit view
+            var editForm = document.createElement("div");
+            editForm.className = "edit-box";
+
+            var kSelect = document.createElement("select");
+            kSelect.innerHTML =
+              '<option value="special">Pyaraa din</option>' +
+              '<option value="journal">A Message</option>' +
+              '<option value="memory">A Little Memory</option>' +
+              '<option value="gratitude">A Little Thank You</option>' +
+              '<option value="silly">Something Silly</option>' +
+              '<option value="littlewin">A Little Win</option>';
+            kSelect.value = e.kind;
+
+            var colorControl = document.createElement("div");
+            colorControl.className = "flag-color-control";
+            var colorLabel = document.createElement("label");
+            colorLabel.textContent = "Flag color";
+            var colorPicker = document.createElement("input");
+            colorPicker.type = "color";
+            colorPicker.value = flagColor(e.color, e.kind);
+            colorPicker.setAttribute("aria-label", "Choose any flag color");
+            colorControl.appendChild(colorLabel);
+            colorControl.appendChild(colorPicker);
+
+            var tInput = document.createElement("input");
+            tInput.value = e.title;
+            tInput.maxLength = 80;
+
+            var txtArea = document.createElement("textarea");
+            txtArea.value = e.text || "";
+            txtArea.maxLength = 5000;
+
+            var repLbl = document.createElement("label");
+            repLbl.className = "chk";
+            var repChk = document.createElement("input");
+            repChk.type = "checkbox";
+            repChk.checked = !!e.yearly;
+            repLbl.appendChild(repChk);
+            repLbl.appendChild(document.createTextNode(" Repeats every year"));
+
+            kSelect.onchange = function () {
+              repLbl.style.display =
+                kSelect.value === "special" ? "flex" : "none";
+            };
+            repLbl.style.display = e.kind === "special" ? "flex" : "none";
+
+            var btnRow = document.createElement("div");
+            btnRow.style.cssText = "display:flex; gap:6px; margin-top:4px;";
+
+            var saveBtn = document.createElement("button");
+            saveBtn.className = "pri";
+            saveBtn.textContent = "Update";
+            saveBtn.style.minHeight = "36px";
+            saveBtn.onclick = function () {
+              if (!tInput.value.trim()) return;
+              if (coll) {
+                updateDoc(doc(coll, e.id), {
+                  title: tInput.value.trim(),
+                  text: txtArea.value.trim(),
+                  kind: kSelect.value,
+                  yearly: kSelect.value === "special" && repChk.checked,
+                  color: colorPicker.value,
+                })
+                  .then(function () {
+                    editingId = null;
+                    render();
+                  })
+                  .catch(function (err) {
+                    customAlert(
+                      "Could not update entry (" +
+                        (err.code || "unknown error") +
+                        "). " +
+                        (err.code === "permission-denied"
+                          ? "Firestore rules must allow updates and the color field for this room's entries."
+                          : err.message ||
+                            "Check your connection and Firebase setup."),
+                    );
+                  });
+              }
+            };
+
+            var cancelBtn = document.createElement("button");
+            cancelBtn.textContent = "Cancel";
+            cancelBtn.style.minHeight = "36px";
+            cancelBtn.onclick = function () {
+              editingId = null;
+              render();
+            };
+
+            btnRow.appendChild(saveBtn);
+            btnRow.appendChild(cancelBtn);
+
+            editForm.appendChild(kSelect);
+            editForm.appendChild(colorControl);
+            editForm.appendChild(tInput);
+            editForm.appendChild(txtArea);
+            editForm.appendChild(repLbl);
+            editForm.appendChild(btnRow);
+
+            w.appendChild(editForm);
+          } else {
+            // Normal entry view with 3-dot dropdown menu
+            var header = document.createElement("div");
+            header.className = "entry-header";
+
+            var t = document.createElement("b");
+            t.textContent = kindMark(e.kind) + " " + e.title;
+            header.appendChild(t);
+
+            // Menu container
+            var menuWrap = document.createElement("div");
+            menuWrap.style.position = "relative";
+
+            var menuBtn = document.createElement("button");
+            menuBtn.className = "menu-btn";
+            menuBtn.innerHTML = "⋮";
+            menuBtn.setAttribute("aria-label", "Entry options");
+
+            var drop = document.createElement("div");
+            drop.className = "dropdown-menu";
+
+            // Edit option
+            var optEdit = document.createElement("button");
+            optEdit.className = "dropdown-item";
+            optEdit.innerHTML = "✎ Edit";
+            optEdit.onclick = function (evt) {
+              evt.stopPropagation();
+              drop.classList.remove("show");
+              editingId = e.id;
+              render();
+            };
+
+            // Delete option
+            var optDelete = document.createElement("button");
+            optDelete.className = "dropdown-item del";
+            optDelete.innerHTML = "🗑 Delete";
+            optDelete.onclick = function (evt) {
+              evt.stopPropagation();
+              drop.classList.remove("show");
+              customPrompt("Delete this entry?").then(function (confirmed) {
+                if (confirmed && coll) {
+                  deleteDoc(doc(coll, e.id)).catch(function () {
+                    customAlert("Could not delete entry.");
+                  });
+                }
+              });
+            };
+
+            // Add Love Goofy option
+            var optLove = document.createElement("button");
+            optLove.className = "dropdown-item";
+            optLove.innerHTML = "♥ Add Love!";
+            optLove.onclick = function (evt) {
+              evt.stopPropagation();
+              drop.classList.remove("show");
+              triggerLoveBurst(menuBtn);
+              if (coll) {
+                updateDoc(doc(coll, e.id), {
+                  loveCount: increment(1),
+                }).catch(function (err) {
+                  console.warn("Could not save love count", err);
+                });
+              }
+            };
+
+            drop.appendChild(optLove);
+            drop.appendChild(optEdit);
+            drop.appendChild(optDelete);
+
+            menuBtn.onclick = function (evt) {
+              evt.stopPropagation();
+              // Close other open menus
+              document
+                .querySelectorAll(".dropdown-menu.show")
+                .forEach(function (m) {
+                  if (m !== drop) m.classList.remove("show");
+                });
+              drop.classList.toggle("show");
+            };
+
+            menuWrap.appendChild(menuBtn);
+            menuWrap.appendChild(drop);
+            header.appendChild(menuWrap);
+
+            w.appendChild(header);
+
+            if (e.text) {
+              var tx = document.createElement("p");
+              tx.textContent = e.text;
+              w.appendChild(tx);
+            }
+
+            var sm = document.createElement("small");
+            sm.textContent =
+              "by " +
+              (e.who || "someone") +
+              (e.yearly && e.kind === "special"
+                ? " · every year (since " + e.date.slice(0, 4) + ")"
+                : "");
+            w.appendChild(sm);
+
+            if (e.loveCount) {
+              var badge = document.createElement("div");
+              badge.className = "love-badge";
+              badge.textContent = "♥ " + e.loveCount + " Love";
+              w.appendChild(badge);
+            }
+          }
+
+          list.appendChild(w);
+        });
+
+        var up = $("up");
+        up.textContent = "";
+        var found = [];
+        for (var k = 0; k < 60; k++) {
+          var dd = new Date(
+              today.getFullYear(),
+              today.getMonth(),
+              today.getDate() + k,
+            ),
+            sd = ds(dd);
+          entries.forEach(function (e) {
+            if (e.kind === "special" && on(e, sd))
+              found.push({ d: dd, e: e, k: k });
+          });
+        }
+        if (!found.length) {
+          var em = document.createElement("div");
+          em.className = "empty";
+          em.textContent = "No special days in the next 60 days.";
+          up.appendChild(em);
+        }
+        found.slice(0, 8).forEach(function (f) {
+          var r = document.createElement("div");
+          r.textContent = "★ " + f.e.title + " ";
+          var sm = document.createElement("small");
+          sm.textContent =
+            f.k === 0
+              ? "today!"
+              : f.k === 1
+                ? "tomorrow"
+                : MON[f.d.getMonth()].slice(0, 3) +
+                  " " +
+                  f.d.getDate() +
+                  " · in " +
+                  f.k +
+                  " days";
+          r.appendChild(sm);
+          up.appendChild(r);
+        });
+
+        $("rep").style.display =
+          $("kind").value === "special" ? "flex" : "none";
+      }
+
+      $("kind").onchange = render;
+      $("prev").onclick = function () {
+        view = new Date(view.getFullYear(), view.getMonth() - 1, 1);
+        render();
+      };
+      $("next").onclick = function () {
+        view = new Date(view.getFullYear(), view.getMonth() + 1, 1);
+        render();
+      };
+      $("f").onsubmit = function (ev) {
+        ev.preventDefault();
+        if (!coll) {
+          customAlert("Enter your room code! You know the secret code 🥳");
+          return;
+        }
+        askName().then(function () {
+          addDoc(coll, {
+            date: sel,
+            kind: $("kind").value,
+            title: $("title").value.trim(),
+            text: $("text").value.trim(),
+            yearly: $("kind").value === "special" && $("yearly").checked,
+            color: $("newColor").value,
+            who: me || "a guest",
+            loveCount: 0,
+            createdAt: Date.now(),
+          })
+            .then(function () {
+              $("title").value = "";
+              $("text").value = "";
+              $("yearly").checked = false;
+            })
+            .catch(function () {
+              customAlert("Could not save. Check your Firestore rules.");
+            });
+        });
+      };
+
+      function enterCalendar() {
+        $("appShell").removeAttribute("inert");
+        render();
+        askRoom(false).then(connect);
+      }
+
+      var welcomeWasSeen = false;
+      try {
+        welcomeWasSeen =
+          localStorage.getItem("ourdays-welcome-seen-v4") === "1";
+      } catch (e) {}
+
+      if (welcomeWasSeen) {
+        document.documentElement.classList.add("welcome-seen");
+        enterCalendar();
+      } else {
+        $("welcomeOpen").focus();
+        $("welcomeOpen").onclick = function () {
+          try {
+            localStorage.setItem("ourdays-welcome-seen-v4", "1");
+          } catch (e) {}
+          $("welcomeScreen").classList.add("leaving");
+          window.setTimeout(function () {
+            $("welcomeScreen").hidden = true;
+            enterCalendar();
+          }, 750);
+        };
+      }
     </script>
   </body>
 </html>
