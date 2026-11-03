@@ -1093,7 +1093,7 @@
           id="dialog-title"
           style="margin: 0 0 8px; font-family: var(--serif); font-size: 1.2rem"
         >
-          OOPS
+          Meow meoww!
         </h4>
         <p
           id="dialog-msg"
@@ -1225,7 +1225,7 @@
       function askName(force) {
         if (me && !force) return Promise.resolve();
         return customPrompt(
-          "What should we call you? (shown on your entries)",
+          "I know you, but What should we call you?",
           me || "",
         ).then(function (n) {
           if (n && n.trim()) {
@@ -1245,7 +1245,7 @@
           "",
         ).then(function (c) {
           if (!c || c.trim().length < 8) {
-            note("Rememberrr the secret code!!");
+            note("Remember the secret code!!");
             return Promise.resolve();
           }
           roomCode = c.trim().toLowerCase();
