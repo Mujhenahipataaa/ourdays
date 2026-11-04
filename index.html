@@ -9,7 +9,7 @@
     <title>Our Days</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link rel="shortcut icon" href="favicon.png" type="image/x-icon" />
+    <link rel="shortcut icon" href="favicon.ico" type="image/x-icon" />
     <link
       href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@500;600;700&display=swap"
       rel="stylesheet"
@@ -128,6 +128,90 @@
       .who b {
         color: var(--ink);
         font-weight: 600;
+      }
+      .presence-card {
+        position: relative;
+        overflow: hidden;
+        background: linear-gradient(145deg, var(--card), var(--soft));
+      }
+      .presence-card::after {
+        content: "☾";
+        position: absolute;
+        right: 17px;
+        top: 4px;
+        color: color-mix(in srgb, var(--accent) 14%, transparent);
+        font: 90px/1 var(--serif);
+        transform: rotate(-14deg);
+        pointer-events: none;
+      }
+      .presence-topline {
+        display: flex;
+        align-items: center;
+        gap: 9px;
+        margin-bottom: 12px;
+        color: var(--mute);
+        font: 600 11px/1.4 var(--sans);
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+      }
+      .presence-light {
+        width: 9px;
+        height: 9px;
+        flex: 0 0 9px;
+        border-radius: 50%;
+        background: var(--accent);
+        box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 12%, transparent);
+        animation: presence-breathe 3s ease-in-out infinite;
+      }
+      .room-people {
+        display: grid;
+        gap: 10px;
+        position: relative;
+        z-index: 1;
+      }
+      .room-person {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font: 500 14px/1.4 var(--sans);
+      }
+      .room-avatar {
+        display: grid;
+        place-items: center;
+        position: relative;
+        width: 36px;
+        height: 36px;
+        flex: 0 0 36px;
+        border-radius: 50%;
+        background: var(--soft);
+        color: var(--accent);
+        font: 600 15px/1 var(--serif);
+      }
+      .room-person.here .room-avatar::after {
+        content: "";
+        position: absolute;
+        right: -1px;
+        bottom: -1px;
+        width: 11px;
+        height: 11px;
+        border: 2px solid var(--card);
+        border-radius: 50%;
+        background: #55a879;
+      }
+      .room-person.away .room-avatar {
+        opacity: 0.58;
+      }
+      .room-state {
+        display: block;
+        color: var(--mute);
+        font: 500 11px/1.4 var(--sans);
+      }
+      @keyframes presence-breathe {
+        50% {
+          box-shadow: 0 0 0 7px
+            color-mix(in srgb, var(--accent) 5%, transparent);
+          opacity: 0.72;
+        }
       }
       .settings {
         position: relative;
@@ -338,6 +422,7 @@
         font: 500 11px/1.5 var(--sans);
         color: var(--mute);
         letter-spacing: 0.025em;
+        margin-right: 10px;
       }
 
       /* Three dots menu styles */
@@ -1142,7 +1227,7 @@
               ⚙
             </button>
             <div id="settingsMenu" class="settings-menu" hidden>
-              <button id="rename" type="button">Change name</button>
+              <button id="rename" type="button">Edit name</button>
               <button id="room" type="button">Change room</button>
             </div>
           </div>
@@ -1163,6 +1248,15 @@
         ></div>
       </div>
       <div class="side">
+        <section class="card presence-card" aria-label="Room presence">
+          <div class="presence-topline">
+            <span class="presence-light" aria-hidden="true"></span
+            ><span>Our status</span>
+          </div>
+          <div class="room-people" id="roomPeople" aria-live="polite">
+            <div class="empty">Waiting for your room…</div>
+          </div>
+        </section>
         <div class="card">
           <h3 id="dt" style="margin: 0 0 4px"></h3>
           <div id="list"></div>
@@ -1269,8 +1363,12 @@
         updateDoc,
         increment,
         deleteDoc,
+        writeBatch,
         doc,
         onSnapshot,
+        getDoc,
+        setDoc,
+        serverTimestamp,
       } from "https://www.gstatic.com/firebasejs/13.2.0/firebase-firestore.js";
 
       /* ====== SETUP: paste your Firebase web app config here ====== */
@@ -1299,6 +1397,13 @@
         coll = null,
         db = null,
         unsub = null,
+        unsubPresence = null,
+        heartbeatTimer = null,
+        presenceUiTimer = null,
+        presencePeople = [],
+        presenceVisibilityHandler = null,
+        presenceColl = null,
+        presenceRef = null,
         me = "",
         roomCode = "";
       var $ = function (i) {
@@ -1318,6 +1423,143 @@
         "November",
         "December",
       ];
+      var presenceId = "";
+      try {
+        presenceId = localStorage.getItem("ourdays-presence-id") || "";
+        if (!presenceId) {
+          presenceId = crypto.randomUUID
+            ? crypto.randomUUID()
+            : String(Date.now()) + Math.random().toString(36).slice(2);
+          localStorage.setItem("ourdays-presence-id", presenceId);
+        }
+      } catch (e) {
+        presenceId = String(Date.now()) + Math.random().toString(36).slice(2);
+      }
+      function formatDateTime(value) {
+        var d = new Date(Number(value));
+        if (!value || isNaN(d.getTime())) return "time unavailable";
+        return new Intl.DateTimeFormat(undefined, {
+          year: "numeric",
+          month: "short",
+          day: "numeric",
+          hour: "numeric",
+          minute: "2-digit",
+          hour12: true,
+        }).format(d);
+      }
+      function updatePresenceStatus(people) {
+        var root = $("roomPeople");
+        if (people) presencePeople = people;
+        var cutoff = Date.now() - 75000;
+        var currentPeople = presencePeople
+          .filter(function (p) {
+            return !p.removed;
+          })
+          .map(function (p) {
+            return Object.assign({}, p, {
+              isHere: !!p.online && Number(p.lastSeen || 0) >= cutoff,
+            });
+          });
+        currentPeople.sort(function (a, b) {
+          return (
+            Number(b.isHere) - Number(a.isHere) ||
+            Number(b.id === presenceId) - Number(a.id === presenceId) ||
+            Number(b.lastSeen || 0) - Number(a.lastSeen || 0)
+          );
+        });
+        root.textContent = "";
+        if (!currentPeople.length) {
+          var empty = document.createElement("div");
+          empty.className = "empty";
+          empty.textContent = "Waiting for us to join…";
+          root.appendChild(empty);
+          return;
+        }
+        currentPeople.forEach(function (person) {
+          var row = document.createElement("div");
+          row.className = "room-person" + (person.isHere ? " here" : " away");
+          var avatar = document.createElement("span");
+          avatar.className = "room-avatar";
+          avatar.setAttribute("aria-hidden", "true");
+          avatar.textContent = (person.name || "?")
+            .trim()
+            .charAt(0)
+            .toUpperCase();
+          var label = document.createElement("span");
+          label.textContent = person.name || "Someone";
+          var state = document.createElement("small");
+          state.className = "room-state";
+          state.textContent = person.isHere
+            ? person.id === presenceId
+              ? "Online · you"
+              : "Online"
+            : "Offline · last seen " + formatDateTime(person.lastSeen);
+          label.appendChild(state);
+          row.append(avatar, label);
+          if (
+            me.replace(/\u00a0/g, " ").trim() === "Ice Bear ✨" &&
+            person.id !== presenceId
+          ) {
+            var removeBtn = document.createElement("button");
+            removeBtn.type = "button";
+            removeBtn.textContent = "Remove";
+            removeBtn.setAttribute(
+              "aria-label",
+              "Remove " + (person.name || "person") + " from the room",
+            );
+            removeBtn.style.cssText =
+              "margin-left:auto; min-height:32px; padding:5px 9px; font-size:11px;";
+            removeBtn.onclick = function () {
+              customPrompt(
+                "Remove " +
+                  (person.name || "this person") +
+                  " from the room and delete their saved cards?",
+                undefined,
+                true,
+              ).then(function (yes) {
+                if (yes && presenceColl) {
+                  var personEntries = entries.filter(function (entry) {
+                    return (
+                      entry.authorId === person.id ||
+                      (!entry.authorId && entry.who === person.name)
+                    );
+                  });
+                  var chunks = [];
+                  for (var i = 0; i < personEntries.length; i += 450)
+                    chunks.push(personEntries.slice(i, i + 450));
+                  var cleanup = Promise.resolve();
+                  chunks.forEach(function (chunk) {
+                    cleanup = cleanup.then(function () {
+                      var batch = writeBatch(db);
+                      chunk.forEach(function (entry) {
+                        batch.delete(doc(coll, entry.id));
+                      });
+                      return batch.commit();
+                    });
+                  });
+                  cleanup
+                    .then(function () {
+                      return updateDoc(doc(presenceColl, person.id), {
+                        removed: true,
+                        online: false,
+                        lastSeen: Date.now(),
+                      });
+                    })
+                    .catch(function (err) {
+                      customAlert(
+                        err.code === "permission-denied"
+                          ? "Firestore rules must allow deleting entries and updating presence records."
+                          : "Could not fully remove this person and their cards. Please check the room again.",
+                      );
+                    });
+                }
+              });
+            };
+            row.appendChild(removeBtn);
+          }
+          root.appendChild(row);
+        });
+      }
 
       // Custom dialog UI replacement for prompt/confirm/alert
       function customPrompt(msg, defaultValue, showCancel = true) {
@@ -1372,11 +1614,60 @@
       function askName(force) {
         if (me && !force) return Promise.resolve();
         return customPrompt(
-          "I know you, but What should we call you?",
+          force
+            ? "Change your name? Your older cards will be updated to the new name too."
+            : "I know you, but What should we call you?",
           me || "",
         ).then(function (n) {
           if (n && n.trim()) {
-            me = n.trim().slice(0, 30);
+            var oldName = me;
+            var newName = n.trim().slice(0, 30);
+            if (oldName && oldName !== newName && coll) {
+              var oldCards = entries.filter(function (entry) {
+                return (
+                  entry.authorId === presenceId ||
+                  (!entry.authorId && entry.who === oldName)
+                );
+              });
+              var chunks = [];
+              for (var i = 0; i < oldCards.length; i += 450)
+                chunks.push(oldCards.slice(i, i + 450));
+              var updateNames = Promise.resolve();
+              chunks.forEach(function (chunk) {
+                updateNames = updateNames.then(function () {
+                  var batch = writeBatch(db);
+                  chunk.forEach(function (entry) {
+                    batch.update(doc(coll, entry.id), { who: newName });
+                  });
+                  return batch.commit();
+                });
+              });
+              return updateNames
+                .then(function () {
+                  me = newName;
+                  try {
+                    localStorage.setItem("ourdays-name", me);
+                  } catch (e) {}
+                  if (presenceRef)
+                    updateDoc(presenceRef, { name: me }).catch(function () {});
+                  entries.forEach(function (entry) {
+                    if (
+                      entry.authorId === presenceId ||
+                      (!entry.authorId && entry.who === oldName)
+                    )
+                      entry.who = newName;
+                  });
+                  $("me").textContent = me;
+                  render();
+                })
+                .catch(function () {
+                  customAlert(
+                    "Could not update the names on your older cards. Check your Firestore rules and try again.",
+                  );
+                  $("me").textContent = me || "a guest";
+                });
+            }
+            me = newName;
             try {
               localStorage.setItem("ourdays-name", me);
             } catch (e) {}
@@ -1418,6 +1709,28 @@
           unsub();
           unsub = null;
         }
+        if (unsubPresence) {
+          unsubPresence();
+          unsubPresence = null;
+        }
+        if (heartbeatTimer) {
+          clearInterval(heartbeatTimer);
+          heartbeatTimer = null;
+        }
+        if (presenceUiTimer) {
+          clearInterval(presenceUiTimer);
+          presenceUiTimer = null;
+        }
+        if (presenceVisibilityHandler) {
+          document.removeEventListener(
+            "visibilitychange",
+            presenceVisibilityHandler,
+          );
+          presenceVisibilityHandler = null;
+        }
+        presencePeople = [];
+        presenceRef = null;
+        presenceColl = null;
         entries = [];
         coll = null;
         render();
@@ -1433,6 +1746,59 @@
           .then(function (h) {
             if (!db) db = getFirestore(initializeApp(firebaseConfig));
             coll = collection(db, "rooms", h, "entries");
+            presenceColl = collection(db, "rooms", h, "presence");
+            presenceRef = doc(presenceColl, presenceId);
+            function beat(online) {
+              if (!presenceRef) return;
+              var visible = online && document.visibilityState === "visible";
+              getDoc(presenceRef)
+                .then(function (presenceSnap) {
+                  var now = Date.now();
+                  var currentPresence = presenceSnap.exists()
+                    ? presenceSnap.data()
+                    : {};
+                  if (currentPresence.removed) return;
+                  return setDoc(
+                    presenceRef,
+                    {
+                      name: me || "a guest",
+                      online: visible,
+                      lastSeen: now,
+                      updatedAt: serverTimestamp(),
+                    },
+                    { merge: true },
+                  );
+                })
+                .catch(function () {});
+            }
+            beat(true);
+            heartbeatTimer = setInterval(function () {
+              beat(document.visibilityState === "visible");
+            }, 20000);
+            presenceUiTimer = setInterval(function () {
+              updatePresenceStatus();
+            }, 5000);
+            presenceVisibilityHandler = function () {
+              beat(document.visibilityState === "visible");
+            };
+            document.addEventListener(
+              "visibilitychange",
+              presenceVisibilityHandler,
+            );
+            unsubPresence = onSnapshot(
+              presenceColl,
+              function (snap) {
+                var livePeople = snap.docs.map(function (d) {
+                  return Object.assign({ id: d.id }, d.data());
+                });
+                updatePresenceStatus(livePeople);
+              },
+              function () {
+                var root = $("roomPeople");
+                root.textContent =
+                  "Room presence is unavailable. Check Firestore rules.";
+              },
+            );
             unsub = onSnapshot(
               coll,
               function (snap) {
@@ -1843,6 +2209,8 @@
             sm.textContent =
               "by " +
               (e.who || "someone") +
+              " · created " +
+              formatDateTime(e.createdAt) +
               (e.yearly && e.kind === "special"
                 ? " · every year (since " + e.date.slice(0, 4) + ")"
                 : "");
@@ -1927,6 +2295,7 @@
             yearly: $("kind").value === "special" && $("yearly").checked,
             color: $("newColor").value,
             who: me || "a guest",
+            authorId: presenceId,
             loveCount: 0,
             createdAt: Date.now(),
           })
@@ -1945,6 +2314,17 @@
         $("appShell").removeAttribute("inert");
         render();
         askRoom(false).then(connect);
+      }
+      window.addEventListener("pagehide", function () {
+        if (presenceRef) beatOffline();
+      });
+      function beatOffline() {
+        if (presenceRef)
+          setDoc(
+            presenceRef,
+            { name: me || "a guest", online: false, lastSeen: Date.now() },
+            { merge: true },
+          ).catch(function () {});
       }
 
       var welcomeWasSeen = false;
