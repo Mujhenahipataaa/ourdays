@@ -1236,6 +1236,10 @@
             <div id="settingsMenu" class="settings-menu" hidden>
               <button id="rename" type="button">Edit name</button>
               <button id="room" type="button">Change room</button>
+              <button id="manageMemberId" type="button">
+                Change member ID
+              </button>
+              <button id="logout" type="button">Log out</button>
               <div id="settingsMemberId" class="settings-members">
                 Member ID: join the room first.
               </div>
@@ -1369,6 +1373,8 @@
       import {
         getFirestore,
         collection,
+        query,
+        where,
         addDoc,
         updateDoc,
         increment,
@@ -1411,14 +1417,15 @@
         unsub = null,
         unsubPresence = null,
         unsubMember = null,
+        unsubMembers = null,
         heartbeatTimer = null,
         presenceUiTimer = null,
         presencePeople = [],
+        membersPeople = [],
         presenceVisibilityHandler = null,
         presenceColl = null,
         presenceRef = null,
         membersCollRef = null,
-        memberRef = null,
         memberRef = null,
         me = "",
         roomCode = "";
@@ -1458,17 +1465,28 @@
           hour12: true,
         }).format(d);
       }
-      function updatePresenceStatus(people) {
+      function updatePresenceStatus(people, members) {
         var root = $("roomPeople");
         if (people) presencePeople = people;
+        if (members) membersPeople = members;
         var cutoff = Date.now() - 75000;
-        var currentPeople = presencePeople
+        var presenceById = {};
+        presencePeople.forEach(function (person) {
+          presenceById[person.id] = person;
+        });
+        var currentPeople = membersPeople
           .filter(function (p) {
-            return !p.removed;
+            return p.id !== "member" && !p.removed;
           })
           .map(function (p) {
-            return Object.assign({}, p, {
-              isHere: !!p.online && Number(p.lastSeen || 0) >= cutoff,
+            var presence = presenceById[p.id] || {};
+            var lastSeen = Number(presence.lastSeen || p.lastSeen || 0);
+            return Object.assign({}, p, presence, {
+              id: p.id,
+              name: presence.name || p.name || "Someone",
+              lastSeen: lastSeen,
+              isHere:
+                !presence.removed && !!presence.online && lastSeen >= cutoff,
             });
           });
         currentPeople.sort(function (a, b) {
@@ -1510,80 +1528,17 @@
             : "Offline · last seen " + formatDateTime(person.lastSeen);
           label.appendChild(state);
           row.append(avatar, label);
-          if (person.id !== presenceId) {
-            var removeBtn = document.createElement("button");
-            removeBtn.type = "button";
-            removeBtn.textContent = "Remove";
-            removeBtn.setAttribute(
-              "aria-label",
-              "Remove " + (person.name || "person") + " from the room",
-            );
-            removeBtn.style.cssText =
-              "margin-left:auto; min-height:32px; padding:5px 9px; font-size:11px;";
-            removeBtn.onclick = function () {
-              customPrompt(
-                "Remove member ID “" +
-                  person.id +
-                  "” (" +
-                  (person.name || "this person") +
-                  ") from the room and delete their saved cards?",
-                undefined,
-                true,
-              ).then(function (yes) {
-                if (yes && presenceColl) {
-                  var personEntries = entries.filter(function (entry) {
-                    return (
-                      entry.authorId === person.id ||
-                      (!entry.authorId && entry.who === person.name)
-                    );
-                  });
-                  var chunks = [];
-                  for (var i = 0; i < personEntries.length; i += 450)
-                    chunks.push(personEntries.slice(i, i + 450));
-                  var cleanup = Promise.resolve();
-                  chunks.forEach(function (chunk) {
-                    cleanup = cleanup.then(function () {
-                      var batch = writeBatch(db);
-                      chunk.forEach(function (entry) {
-                        batch.delete(doc(coll, entry.id));
-                      });
-                      return batch.commit();
-                    });
-                  });
-                  cleanup
-                    .then(function () {
-                      var removedAt = Date.now();
-                      return updateDoc(doc(membersCollRef, person.id), {
-                        removed: true,
-                        removedAt: removedAt,
-                        lastSeen: removedAt,
-                      }).then(function () {
-                        return updateDoc(doc(presenceColl, person.id), {
-                          removed: true,
-                          online: false,
-                          lastSeen: removedAt,
-                        });
-                      });
-                    })
-                    .catch(function (err) {
-                      customAlert(
-                        err.code === "permission-denied"
-                          ? "Firestore rules must allow deleting entries and updating member and presence records."
-                          : "Could not fully remove this person and their cards. Please check the room again.",
-                      );
-                    });
-                }
-              });
-            };
-            row.appendChild(removeBtn);
-          }
           root.appendChild(row);
         });
         var memberSettings = $("settingsMemberId");
         memberSettings.textContent = "";
-        presencePeople
+        membersPeople
           .filter(function (person) {
-            return !person.removed && /^[a-z0-9-]{3,24}$/.test(person.id);
+            return (
+              person.id !== "member" &&
+              !person.removed &&
+              /^[a-z0-9-]{3,24}$/.test(person.id)
+            );
           })
           .forEach(function (person) {
             var memberRow = document.createElement("div");
@@ -1594,13 +1549,19 @@
       }
 
       function suggestMemberId(name) {
-        var base =
-          (name || "member")
-            .toLowerCase()
-            .replace(/[^a-z0-9]+/g, "-")
-            .replace(/^-+|-+$/g, "")
-            .slice(0, 16) || "member";
-        return base.length >= 3 ? base : "member-" + base;
+        var base = (name || "")
+          .toLowerCase()
+          .replace(/[^a-z0-9]+/g, "-")
+          .replace(/^-+|-+$/g, "")
+          .slice(0, 16);
+        return base.length >= 3 ? base : "";
+      }
+
+      function displayNameFromHandle(handle) {
+        var words = (handle || "member").replace(/[-_]+/g, " ").trim();
+        return words
+          ? words.charAt(0).toUpperCase() + words.slice(1)
+          : "Member";
       }
 
       function claimMemberId(membersColl, initial) {
@@ -1637,12 +1598,14 @@
           ).then(function (value) {
             if (!value) return false;
             var handle = value.trim().toLowerCase();
-            if (!/^[a-z0-9-]{3,24}$/.test(handle)) {
-              return customAlert("Use 3–24 letters, numbers, or hyphens.").then(
-                function () {
-                  return ask(suggested);
-                },
-              );
+            if (handle === "member" || !/^[a-z0-9-]{3,24}$/.test(handle)) {
+              return customAlert(
+                handle === "member"
+                  ? "Please choose a personal handle; “member” is reserved."
+                  : "Use 3–24 letters, numbers, or hyphens.",
+              ).then(function () {
+                return ask(suggested);
+              });
             }
             function saveHandle(allowExisting) {
               var existingName = "";
@@ -1659,7 +1622,7 @@
                     : "";
                   transaction.set(memberRef, {
                     handle: handle,
-                    name: existingName || me || "a guest",
+                    name: existingName || displayNameFromHandle(handle),
                     firstSeen: memberSnap.exists()
                       ? memberSnap.data().firstSeen
                       : now,
@@ -1668,7 +1631,7 @@
                 });
               }).then(function () {
                 presenceId = handle;
-                if (existingName) me = existingName;
+                me = existingName || displayNameFromHandle(handle);
                 try {
                   localStorage.setItem("ourdays-member-id", handle);
                   if (me) localStorage.setItem("ourdays-name", me);
@@ -1692,11 +1655,7 @@
                           return false;
                         });
                       })
-                    : ask(
-                        suggestMemberId(me) +
-                          "-" +
-                          Math.random().toString(36).slice(2, 5),
-                      );
+                    : ask("");
                 });
               }
               return customAlert(
@@ -1923,6 +1882,10 @@
           unsubMember();
           unsubMember = null;
         }
+        if (unsubMembers) {
+          unsubMembers();
+          unsubMembers = null;
+        }
         if (heartbeatTimer) {
           clearInterval(heartbeatTimer);
           heartbeatTimer = null;
@@ -1939,6 +1902,7 @@
           presenceVisibilityHandler = null;
         }
         presencePeople = [];
+        membersPeople = [];
         presenceRef = null;
         presenceColl = null;
         entries = [];
@@ -1976,6 +1940,20 @@
                   if (presenceRef)
                     updateDoc(presenceRef, { name: me }).catch(function () {});
                 });
+                unsubMembers = onSnapshot(
+                  membersColl,
+                  function (snap) {
+                    membersPeople = snap.docs.map(function (d) {
+                      return Object.assign({ id: d.id }, d.data());
+                    });
+                    updatePresenceStatus();
+                  },
+                  function () {
+                    var root = $("roomPeople");
+                    root.textContent =
+                      "Room members are unavailable. Check Firestore rules.";
+                  },
+                );
                 function beat(online) {
                   if (!presenceRef) return;
                   var visible =
@@ -2090,6 +2068,193 @@
       $("room").onclick = function () {
         closeSettings();
         askRoom(true).then(connect);
+      };
+      $("manageMemberId").onclick = function () {
+        closeSettings();
+        if (!presenceId || !membersCollRef || !presenceRef || !memberRef) {
+          customAlert("Join your room first to set or change your member ID.");
+          return;
+        }
+        var oldId = presenceId;
+        var oldMemberRef = memberRef;
+        var oldPresenceRef = presenceRef;
+        var nextId = customPrompt(
+          "Choose a new member ID (3–24 letters, numbers, or hyphens). Your saved cards will move to it; use the new ID on your other devices too. If the change is interrupted, enter this same ID again to resume:",
+          oldId,
+        ).then(function (value) {
+          if (!value) return;
+          var newId = value.trim().toLowerCase();
+          if (!/^[a-z0-9-]{3,24}$/.test(newId)) {
+            return customAlert("Use 3–24 letters, numbers, or hyphens.");
+          }
+          if (newId === oldId) return;
+          var newMemberRef = doc(membersCollRef, newId);
+          var migrationRef = doc(
+            membersCollRef.parent,
+            "memberMigrations",
+            oldId,
+          );
+          return runTransaction(db, function (transaction) {
+            return Promise.all([
+              transaction.get(oldMemberRef),
+              transaction.get(newMemberRef),
+              transaction.get(migrationRef),
+            ]).then(function (snaps) {
+              var oldSnap = snaps[0];
+              var newSnap = snaps[1];
+              var migrationSnap = snaps[2];
+              var previousMigration = migrationSnap.exists()
+                ? migrationSnap.data()
+                : null;
+              var sameMigration =
+                previousMigration &&
+                previousMigration.from === oldId &&
+                previousMigration.to === newId &&
+                ["pending", "complete"].indexOf(previousMigration.status) >= 0;
+              if (
+                previousMigration &&
+                previousMigration.status === "pending" &&
+                previousMigration.from === oldId &&
+                previousMigration.to !== newId
+              )
+                throw new Error("MIGRATION_TARGET_MISMATCH");
+              if (!oldSnap.exists() && !sameMigration)
+                throw new Error("HANDLE_MISSING");
+              if (newSnap.exists() && !sameMigration)
+                throw new Error("HANDLE_TAKEN");
+              if (!newSnap.exists() && !oldSnap.exists())
+                throw new Error("HANDLE_MISSING");
+              var oldMember = oldSnap.exists() ? oldSnap.data() : {};
+              if (!newSnap.exists()) {
+                transaction.set(newMemberRef, {
+                  handle: newId,
+                  name: oldMember.name || me || "a guest",
+                  firstSeen: oldMember.firstSeen || Date.now(),
+                  lastSeen: Date.now(),
+                });
+              }
+              if (!sameMigration) {
+                transaction.set(migrationRef, {
+                  from: oldId,
+                  to: newId,
+                  status: "pending",
+                  updatedAt: Date.now(),
+                });
+              }
+            });
+          })
+            .then(function () {
+              function moveNextEntryBatch() {
+                return getDocs(
+                  query(coll, where("authorId", "==", oldId)),
+                ).then(function (snapshot) {
+                  if (snapshot.empty) return;
+                  var batch = writeBatch(db);
+                  snapshot.docs.slice(0, 450).forEach(function (entrySnap) {
+                    batch.update(entrySnap.ref, { authorId: newId });
+                  });
+                  return batch.commit().then(moveNextEntryBatch);
+                });
+              }
+              return moveNextEntryBatch().then(function () {
+                var now = Date.now();
+                return setDoc(doc(presenceColl, newId), {
+                  name: me || "a guest",
+                  online: true,
+                  lastSeen: now,
+                  updatedAt: serverTimestamp(),
+                  removed: false,
+                })
+                  .then(function () {
+                    return setDoc(migrationRef, {
+                      from: oldId,
+                      to: newId,
+                      status: "complete",
+                      updatedAt: Date.now(),
+                    });
+                  })
+                  .then(function () {
+                    return updateDoc(oldPresenceRef, {
+                      online: false,
+                      removed: true,
+                      lastSeen: now,
+                    }).catch(function () {});
+                  })
+                  .then(function () {
+                    return deleteDoc(oldMemberRef);
+                  })
+                  .then(function () {
+                    presenceId = newId;
+                    try {
+                      localStorage.setItem("ourdays-member-id", newId);
+                    } catch (e) {}
+                    return customAlert(
+                      "Your member ID is now " +
+                        newId +
+                        ". Use it on your other devices too.",
+                    );
+                  });
+              });
+            })
+            .then(function () {
+              if (presenceId === newId) connect();
+            })
+            .catch(function (err) {
+              customAlert(
+                err && err.message === "HANDLE_TAKEN"
+                  ? "That member ID is already in use. Choose another one."
+                  : err && err.message === "MIGRATION_TARGET_MISMATCH"
+                    ? "A handle change to another ID is already in progress. Enter that same ID to resume it."
+                    : "The handle change may still be in progress. Choose the same new ID again to resume it. Check your Firestore rules and try again.",
+              );
+            });
+        });
+      };
+      $("logout").onclick = function () {
+        closeSettings();
+        customPrompt(
+          "Log out on this device? Your member and saved cards will stay in the room.",
+          undefined,
+          true,
+        ).then(function (confirmed) {
+          if (!confirmed) return;
+          var finishLogout = function () {
+            if (heartbeatTimer) {
+              clearInterval(heartbeatTimer);
+              heartbeatTimer = null;
+            }
+            presenceRef = null;
+            if (unsubMember) {
+              unsubMember();
+              unsubMember = null;
+            }
+            try {
+              localStorage.removeItem("ourdays-member-id");
+              localStorage.removeItem("ourdays-name");
+            } catch (e) {}
+            presenceId = "";
+            legacyPresenceId = "";
+            me = "";
+            $("me").textContent = "a guest";
+            connect();
+          };
+          if (presenceRef) {
+            setDoc(
+              presenceRef,
+              {
+                name: me || "a guest",
+                online: false,
+                lastSeen: Date.now(),
+                updatedAt: serverTimestamp(),
+              },
+              { merge: true },
+            )
+              .then(finishLogout)
+              .catch(finishLogout);
+          } else {
+            finishLogout();
+          }
+        });
       };
 
       document.addEventListener("keydown", function (evt) {
@@ -2398,13 +2563,17 @@
             optDelete.onclick = function (evt) {
               evt.stopPropagation();
               drop.classList.remove("show");
-              customPrompt("Delete this entry?").then(function (confirmed) {
-                if (confirmed && coll) {
-                  deleteDoc(doc(coll, e.id)).catch(function () {
-                    customAlert("Could not delete entry.");
-                  });
-                }
-              });
+              customPrompt("Delete this card permanently?").then(
+                function (confirmed) {
+                  if (confirmed && coll) {
+                    deleteDoc(doc(coll, e.id)).catch(function () {
+                      customAlert(
+                        "Could not delete this card. Check your Firestore rules.",
+                      );
+                    });
+                  }
+                },
+              );
             };
 
             // Add Love Goofy option
