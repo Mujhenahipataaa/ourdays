@@ -244,6 +244,13 @@
         width: 100%;
         text-align: left;
       }
+      .settings-members {
+        border-top: 1px solid var(--line);
+        padding-top: 8px;
+        color: var(--mute);
+        font: 500 11px/1.45 var(--sans);
+        overflow-wrap: anywhere;
+      }
       .card {
         min-width: 0;
         background: var(--card);
@@ -1229,6 +1236,9 @@
             <div id="settingsMenu" class="settings-menu" hidden>
               <button id="rename" type="button">Edit name</button>
               <button id="room" type="button">Change room</button>
+              <div id="settingsMemberId" class="settings-members">
+                Member ID: join the room first.
+              </div>
             </div>
           </div>
         </div>
@@ -1366,8 +1376,10 @@
         writeBatch,
         doc,
         onSnapshot,
+        getDocs,
         getDoc,
         setDoc,
+        runTransaction,
         serverTimestamp,
       } from "https://www.gstatic.com/firebasejs/13.2.0/firebase-firestore.js";
 
@@ -1398,12 +1410,16 @@
         db = null,
         unsub = null,
         unsubPresence = null,
+        unsubMember = null,
         heartbeatTimer = null,
         presenceUiTimer = null,
         presencePeople = [],
         presenceVisibilityHandler = null,
         presenceColl = null,
         presenceRef = null,
+        membersCollRef = null,
+        memberRef = null,
+        memberRef = null,
         me = "",
         roomCode = "";
       var $ = function (i) {
@@ -1424,17 +1440,12 @@
         "December",
       ];
       var presenceId = "";
+      var legacyPresenceId = "";
+      var legacyMigrationRunning = false;
       try {
-        presenceId = localStorage.getItem("ourdays-presence-id") || "";
-        if (!presenceId) {
-          presenceId = crypto.randomUUID
-            ? crypto.randomUUID()
-            : String(Date.now()) + Math.random().toString(36).slice(2);
-          localStorage.setItem("ourdays-presence-id", presenceId);
-        }
-      } catch (e) {
-        presenceId = String(Date.now()) + Math.random().toString(36).slice(2);
-      }
+        presenceId = localStorage.getItem("ourdays-member-id") || "";
+        legacyPresenceId = localStorage.getItem("ourdays-presence-id") || "";
+      } catch (e) {}
       function formatDateTime(value) {
         var d = new Date(Number(value));
         if (!value || isNaN(d.getTime())) return "time unavailable";
@@ -1473,6 +1484,9 @@
           empty.className = "empty";
           empty.textContent = "Waiting for us to join…";
           root.appendChild(empty);
+          $("settingsMemberId").textContent = presenceId
+            ? "Your member ID: " + presenceId
+            : "Member ID: join the room first.";
           return;
         }
         currentPeople.forEach(function (person) {
@@ -1496,10 +1510,7 @@
             : "Offline · last seen " + formatDateTime(person.lastSeen);
           label.appendChild(state);
           row.append(avatar, label);
-          if (
-            me.replace(/\u00a0/g, " ").trim() === "Ice Bear ✨" &&
-            person.id !== presenceId
-          ) {
+          if (person.id !== presenceId) {
             var removeBtn = document.createElement("button");
             removeBtn.type = "button";
             removeBtn.textContent = "Remove";
@@ -1511,9 +1522,11 @@
               "margin-left:auto; min-height:32px; padding:5px 9px; font-size:11px;";
             removeBtn.onclick = function () {
               customPrompt(
-                "Remove " +
+                "Remove member ID “" +
+                  person.id +
+                  "” (" +
                   (person.name || "this person") +
-                  " from the room and delete their saved cards?",
+                  ") from the room and delete their saved cards?",
                 undefined,
                 true,
               ).then(function (yes) {
@@ -1539,16 +1552,23 @@
                   });
                   cleanup
                     .then(function () {
-                      return updateDoc(doc(presenceColl, person.id), {
+                      var removedAt = Date.now();
+                      return updateDoc(doc(membersCollRef, person.id), {
                         removed: true,
-                        online: false,
-                        lastSeen: Date.now(),
+                        removedAt: removedAt,
+                        lastSeen: removedAt,
+                      }).then(function () {
+                        return updateDoc(doc(presenceColl, person.id), {
+                          removed: true,
+                          online: false,
+                          lastSeen: removedAt,
+                        });
                       });
                     })
                     .catch(function (err) {
                       customAlert(
                         err.code === "permission-denied"
-                          ? "Firestore rules must allow deleting entries and updating presence records."
+                          ? "Firestore rules must allow deleting entries and updating member and presence records."
                           : "Could not fully remove this person and their cards. Please check the room again.",
                       );
                     });
@@ -1559,6 +1579,190 @@
           }
           root.appendChild(row);
         });
+        var memberSettings = $("settingsMemberId");
+        memberSettings.textContent = "";
+        presencePeople
+          .filter(function (person) {
+            return !person.removed && /^[a-z0-9-]{3,24}$/.test(person.id);
+          })
+          .forEach(function (person) {
+            var memberRow = document.createElement("div");
+            memberRow.textContent =
+              (person.name || "Someone") + " — " + person.id;
+            memberSettings.appendChild(memberRow);
+          });
+      }
+
+      function suggestMemberId(name) {
+        var base =
+          (name || "member")
+            .toLowerCase()
+            .replace(/[^a-z0-9]+/g, "-")
+            .replace(/^-+|-+$/g, "")
+            .slice(0, 16) || "member";
+        return base.length >= 3 ? base : "member-" + base;
+      }
+
+      function claimMemberId(membersColl, initial) {
+        var suggestion = presenceId || suggestMemberId(me);
+        if (!initial && presenceId) {
+          var returningRef = doc(membersColl, presenceId);
+          var savedName = me;
+          return runTransaction(db, function (transaction) {
+            return transaction.get(returningRef).then(function (snap) {
+              if (!snap.exists()) throw new Error("HANDLE_MISSING");
+              savedName = snap.data().name || me || "a guest";
+              transaction.update(returningRef, {
+                lastSeen: Date.now(),
+                removed: false,
+              });
+            });
+          })
+            .then(function () {
+              me = savedName;
+              try {
+                localStorage.setItem("ourdays-name", me);
+              } catch (e) {}
+              $("me").textContent = me;
+              return true;
+            })
+            .catch(function () {
+              return ask(presenceId || suggestMemberId(me));
+            });
+        }
+        function ask(suggested) {
+          return customPrompt(
+            "Choose a member ID (3–24 letters, numbers, or hyphens). Enter the same ID on another device to use this member there:",
+            suggested,
+          ).then(function (value) {
+            if (!value) return false;
+            var handle = value.trim().toLowerCase();
+            if (!/^[a-z0-9-]{3,24}$/.test(handle)) {
+              return customAlert("Use 3–24 letters, numbers, or hyphens.").then(
+                function () {
+                  return ask(suggested);
+                },
+              );
+            }
+            function saveHandle(allowExisting) {
+              var existingName = "";
+              return runTransaction(db, function (transaction) {
+                var memberRef = doc(membersColl, handle);
+                return transaction.get(memberRef).then(function (memberSnap) {
+                  if (memberSnap.exists() && !allowExisting) {
+                    var taken = new Error("HANDLE_TAKEN");
+                    throw taken;
+                  }
+                  var now = Date.now();
+                  existingName = memberSnap.exists()
+                    ? memberSnap.data().name || ""
+                    : "";
+                  transaction.set(memberRef, {
+                    handle: handle,
+                    name: existingName || me || "a guest",
+                    firstSeen: memberSnap.exists()
+                      ? memberSnap.data().firstSeen
+                      : now,
+                    lastSeen: now,
+                  });
+                });
+              }).then(function () {
+                presenceId = handle;
+                if (existingName) me = existingName;
+                try {
+                  localStorage.setItem("ourdays-member-id", handle);
+                  if (me) localStorage.setItem("ourdays-name", me);
+                } catch (e) {}
+                $("me").textContent = me || "a guest";
+                return true;
+              });
+            }
+            return saveHandle(false).catch(function (err) {
+              if (err && err.message === "HANDLE_TAKEN") {
+                return customPrompt(
+                  "That ID already exists. Use it to open the existing member on this device?",
+                  undefined,
+                  true,
+                ).then(function (useExisting) {
+                  return useExisting
+                    ? saveHandle(true).catch(function () {
+                        return customAlert(
+                          "Could not use that member ID. Check your Firestore rules.",
+                        ).then(function () {
+                          return false;
+                        });
+                      })
+                    : ask(
+                        suggestMemberId(me) +
+                          "-" +
+                          Math.random().toString(36).slice(2, 5),
+                      );
+                });
+              }
+              return customAlert(
+                "Could not save that member ID. Check your Firestore rules.",
+              ).then(function () {
+                return false;
+              });
+            });
+          });
+        }
+        return ask(suggestion);
+      }
+
+      function migrateLegacyCards() {
+        if (!legacyPresenceId || legacyMigrationRunning || !presenceId || !coll)
+          return;
+        var oldId = legacyPresenceId;
+        var oldCards = entries.filter(function (entry) {
+          return entry.authorId === oldId;
+        });
+        if (!oldCards.length) {
+          legacyPresenceId = "";
+          try {
+            localStorage.removeItem("ourdays-presence-id");
+          } catch (e) {}
+          return;
+        }
+        legacyMigrationRunning = true;
+        var chunks = [];
+        for (var i = 0; i < oldCards.length; i += 450)
+          chunks.push(oldCards.slice(i, i + 450));
+        var migration = Promise.resolve();
+        chunks.forEach(function (chunk) {
+          migration = migration.then(function () {
+            var batch = writeBatch(db);
+            chunk.forEach(function (entry) {
+              batch.update(doc(coll, entry.id), {
+                authorId: presenceId,
+                who: me || entry.who,
+              });
+            });
+            return batch.commit();
+          });
+        });
+        migration
+          .then(function () {
+            entries.forEach(function (entry) {
+              if (entry.authorId === oldId) {
+                entry.authorId = presenceId;
+                entry.who = me || entry.who;
+              }
+            });
+            legacyPresenceId = "";
+            try {
+              localStorage.removeItem("ourdays-presence-id");
+            } catch (e) {}
+            render();
+          })
+          .catch(function () {
+            note(
+              "Could not link your older cards to this member ID. Check your Firestore rules.",
+            );
+          })
+          .finally(function () {
+            legacyMigrationRunning = false;
+          });
       }
 
       // Custom dialog UI replacement for prompt/confirm/alert
@@ -1648,6 +1852,8 @@
                   try {
                     localStorage.setItem("ourdays-name", me);
                   } catch (e) {}
+                  if (memberRef)
+                    updateDoc(memberRef, { name: me }).catch(function () {});
                   if (presenceRef)
                     updateDoc(presenceRef, { name: me }).catch(function () {});
                   entries.forEach(function (entry) {
@@ -1713,6 +1919,10 @@
           unsubPresence();
           unsubPresence = null;
         }
+        if (unsubMember) {
+          unsubMember();
+          unsubMember = null;
+        }
         if (heartbeatTimer) {
           clearInterval(heartbeatTimer);
           heartbeatTimer = null;
@@ -1747,76 +1957,112 @@
             if (!db) db = getFirestore(initializeApp(firebaseConfig));
             coll = collection(db, "rooms", h, "entries");
             presenceColl = collection(db, "rooms", h, "presence");
-            presenceRef = doc(presenceColl, presenceId);
-            function beat(online) {
-              if (!presenceRef) return;
-              var visible = online && document.visibilityState === "visible";
-              getDoc(presenceRef)
-                .then(function (presenceSnap) {
-                  var now = Date.now();
-                  var currentPresence = presenceSnap.exists()
-                    ? presenceSnap.data()
-                    : {};
-                  if (currentPresence.removed) return;
-                  return setDoc(
-                    presenceRef,
-                    {
-                      name: me || "a guest",
-                      online: visible,
-                      lastSeen: now,
-                      updatedAt: serverTimestamp(),
-                    },
-                    { merge: true },
-                  );
-                })
-                .catch(function () {});
-            }
-            beat(true);
-            heartbeatTimer = setInterval(function () {
-              beat(document.visibilityState === "visible");
-            }, 20000);
-            presenceUiTimer = setInterval(function () {
-              updatePresenceStatus();
-            }, 5000);
-            presenceVisibilityHandler = function () {
-              beat(document.visibilityState === "visible");
-            };
-            document.addEventListener(
-              "visibilitychange",
-              presenceVisibilityHandler,
-            );
-            unsubPresence = onSnapshot(
-              presenceColl,
-              function (snap) {
-                var livePeople = snap.docs.map(function (d) {
-                  return Object.assign({ id: d.id }, d.data());
+            var membersColl = collection(db, "rooms", h, "members");
+            membersCollRef = membersColl;
+            return claimMemberId(membersColl, !presenceId).then(
+              function (claimed) {
+                if (!claimed) return;
+                presenceRef = doc(presenceColl, presenceId);
+                memberRef = doc(membersColl, presenceId);
+                unsubMember = onSnapshot(memberRef, function (snap) {
+                  if (!snap.exists()) return;
+                  var savedName = snap.data().name || "a guest";
+                  if (savedName === me) return;
+                  me = savedName;
+                  try {
+                    localStorage.setItem("ourdays-name", me);
+                  } catch (e) {}
+                  $("me").textContent = me;
+                  if (presenceRef)
+                    updateDoc(presenceRef, { name: me }).catch(function () {});
                 });
-                updatePresenceStatus(livePeople);
-              },
-              function () {
-                var root = $("roomPeople");
-                root.textContent =
-                  "Room presence is unavailable. Check Firestore rules.";
-              },
-            );
-            unsub = onSnapshot(
-              coll,
-              function (snap) {
-                entries = snap.docs
-                  .map(function (d) {
-                    var x = d.data();
-                    x.id = d.id;
-                    return x;
+                function beat(online) {
+                  if (!presenceRef) return;
+                  var visible =
+                    online && document.visibilityState === "visible";
+                  getDoc(presenceRef)
+                    .then(function (presenceSnap) {
+                      var now = Date.now();
+                      var currentPresence = presenceSnap.exists()
+                        ? presenceSnap.data()
+                        : {};
+                      if (currentPresence.removed) return;
+                      return setDoc(
+                        presenceRef,
+                        {
+                          name: me || "a guest",
+                          online: visible,
+                          lastSeen: now,
+                          updatedAt: serverTimestamp(),
+                        },
+                        { merge: true },
+                      );
+                    })
+                    .catch(function () {});
+                }
+                setDoc(
+                  presenceRef,
+                  {
+                    name: me || "a guest",
+                    online: true,
+                    lastSeen: Date.now(),
+                    updatedAt: serverTimestamp(),
+                    removed: false,
+                  },
+                  { merge: true },
+                )
+                  .then(function () {
+                    beat(true);
                   })
-                  .filter(function (e) {
-                    return e && e.date && e.title;
-                  });
-                note("");
-                render();
-              },
-              function () {
-                note(
-                  "Could not reach the shared calendar. Check your Firestore rules and connection.",
+                  .catch(function () {});
+                heartbeatTimer = setInterval(function () {
+                  beat(document.visibilityState === "visible");
+                }, 20000);
+                presenceUiTimer = setInterval(function () {
+                  updatePresenceStatus();
+                }, 5000);
+                presenceVisibilityHandler = function () {
+                  beat(document.visibilityState === "visible");
+                };
+                document.addEventListener(
+                  "visibilitychange",
+                  presenceVisibilityHandler,
+                );
+                unsubPresence = onSnapshot(
+                  presenceColl,
+                  function (snap) {
+                    var livePeople = snap.docs.map(function (d) {
+                      return Object.assign({ id: d.id }, d.data());
+                    });
+                    updatePresenceStatus(livePeople);
+                  },
+                  function () {
+                    var root = $("roomPeople");
+                    root.textContent =
+                      "Room presence is unavailable. Check Firestore rules.";
+                  },
+                );
+                unsub = onSnapshot(
+                  coll,
+                  function (snap) {
+                    entries = snap.docs
+                      .map(function (d) {
+                        var x = d.data();
+                        x.id = d.id;
+                        return x;
+                      })
+                      .filter(function (e) {
+                        return e && e.date && e.title;
+                      });
+                    migrateLegacyCards();
+                    note("");
+                    render();
+                  },
+                  function () {
+                    note(
+                      "Could not reach the shared calendar. Check your Firestore rules and connection.",
+                    );
+                  },
                 );
               },
             );
